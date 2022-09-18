@@ -1,0 +1,3 @@
+{
+  "JWT_SECRET_KEY": "sample-secret-key"
+}
