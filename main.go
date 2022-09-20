@@ -27,7 +27,6 @@ func main() {
 		}
 	})
 
-	//server.SetDefaultMongoClient("mongodb+srv://amirdlt:amirdlt2000@amirdltapp.7srwd.mongodb.net/?retryWrites=true&w=majority")
 	server.SetDefaultMongoClient("mongodb://localhost:27017")
 
 	fmt.Println("Halle")
