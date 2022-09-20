@@ -68,5 +68,4 @@ func main() {
 	}).Register(http.MethodPost, "/")
 
 	log.Fatal(server.Run(5000))
-	//	"mongodb+srv://amirdlt:amirdlt2000@amirdltapp.7srwd.mongodb.net/?retryWrites=true&w=majority"
 }
