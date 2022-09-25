@@ -1,14 +1,14 @@
-package core
+package flx
 
 import "reflect"
 
-type HandlerResult struct {
+type Result struct {
 	responseBody any
 	statusCode   int
 	extValue     any
 }
 
-func (h HandlerResult) getExtValue() any {
+func (h Result) getExtValue() any {
 	if h.extValue == nil {
 		return nil
 	}

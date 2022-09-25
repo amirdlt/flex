@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	. "github.com/amirdlt/flex/common"
-	. "github.com/amirdlt/flex/core"
+	. "github.com/amirdlt/flex/flx"
+	"github.com/amirdlt/flex/middleware"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -14,60 +16,80 @@ type userInfo struct {
 	Age       int    `json:"age"`
 }
 
-type _ServerInjector struct {
+type injector struct {
 	Username string
-	ServerBaseInjector[_ServerInjector]
+	*BasicInjector[*injector]
 }
 
 func main() {
-	server := NewServer[_ServerInjector](M{}, func(b ServerBaseInjector[_ServerInjector]) *_ServerInjector {
-		return &_ServerInjector{
-			Username:           "AmirDLT2000",
-			ServerBaseInjector: b,
+	type me struct {
+		Name string
+	}
+	m := Map[string, me]{
+		"adlt": me{"amirdlt"},
+	}
+
+	fmt.Println(m)
+	fmt.Println(m)
+
+	server := NewServer[*injector](M{}, func(b *BasicInjector[*injector]) *injector {
+		return &injector{
+			Username:      "AmirDLT2000",
+			BasicInjector: b,
 		}
-	})
+	}).WrapHandler(201, middleware.Monitor(&injector{}, os.Stdout))
 
 	//server.SetDefaultMongoClient("mongodb+srv://amirdlt:amirdlt2000@amirdltapp.7srwd.mongodb.net/?retryWrites=true&w=majority")
 	server.SetDefaultMongoClient("mongodb://localhost:27017")
 
 	fmt.Println("Halle")
 
+	server.WrapHandler(200, middleware.DosLimiter(320, 10*time.Second, func(i *injector) Result {
+		return i.WrapTooManyRequestsErr("dos limiter is here")
+	}))
+
 	g1 := server.Group("/v1").Group("/v2")
 
-	Register(g1, http.MethodGet, "/ping", func(i *HandlerInjector[_ServerInjector, NoBody]) HandlerResult {
-		return i.WrapTextPlain("pong", http.StatusOK)
-	})
-
-	g1.WrapHandler(func(handler any) any {
-		return func() any {
+	g1.WrapHandler(100, func(handler Handler[*injector]) Handler[*injector] {
+		return func(i *injector) Result {
 			fmt.Println("Hi im from server middleware")
 
-			return handler
+			return handler(i)
 		}
-	})
+	}).WrapHandler(-1, middleware.PanicHandler(func(i *injector, catch any) Result {
+		return i.WrapInternalErr(fmt.Sprint(catch))
+	}))
 
-	NewMiddleware(g1, func(i *HandlerInjector[_ServerInjector, userInfo]) HandlerResult {
-		fmt.Println("dev req body=", i.RequestBody())
-		fmt.Println("dev: ", i.SI.Username)
-		fmt.Println("dev: ", i.Method())
-		if _, err := i.Server().GetDefaultMongoClient().GetDatabase("my-app").GetCollection("my-col").InsertOne(i.Context(), M{
-			"time": time.Now(),
-		}); err != nil {
-			return i.WrapInternalErr("could not insert time to collection")
+	g1.Handle(http.MethodGet, "/ping", NewMiddleware(func(i *injector) Result {
+		fmt.Println(i.Username)
+		//panic("not implemented")
+		sum := 0
+		for i := 0; i < 1_000_000_000; i++ {
+			sum += i
 		}
 
-		return i.WrapOk("ok i get it")
-	}).WrapHandler(func(h Handler[_ServerInjector, userInfo]) Handler[_ServerInjector, userInfo] {
-		return func(i *HandlerInjector[_ServerInjector, userInfo]) HandlerResult {
-			t := time.Now()
-			defer func() {
-				fmt.Println("wrapper: ", time.Since(t).Milliseconds())
-			}()
+		i.SetValue("sum", sum)
 
-			return h(i)
+		return i.WrapOk(i.GetDataMap())
+	}).WrapHandler(0, func(handler Handler[*injector]) Handler[*injector] {
+		return func(i *injector) Result {
+			fmt.Println("Hi im from outer middleware")
+			i.Username = "Amir?"
+			return handler(i)
 		}
-	}).Register(http.MethodPost, "/")
+	}).WrapHandler(0, func(handler Handler[*injector]) Handler[*injector] {
+		return func(i *injector) Result {
+			fmt.Println("Hi im from second outer middleware")
+			i.Username = "Amir?"
+			return handler(i)
+		}
+	}), NoBody{})
 
-	log.Fatal(server.Run(5000))
+	g1.Handle(http.MethodGet, "/ping2", func(i *injector) Result {
+		fmt.Println(i.RequestBody())
+		return i.WrapOk("pong2")
+	}, 0)
+
+	log.Fatal(server.Run())
 	//	"mongodb+srv://amirdlt:amirdlt2000@amirdltapp.7srwd.mongodb.net/?retryWrites=true&w=majority"
 }

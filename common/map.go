@@ -1,12 +1,15 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 type M = map[string]any
 
-type Map[K, V comparable] map[K]V
+type Map[K comparable, V any] map[K]V
 
-type Item[K, V comparable] struct {
+type Item[K comparable, V any] struct {
 	k K
 	v V
 }
@@ -69,7 +72,7 @@ func (m Map[K, V]) ContainKey(key K) bool {
 
 func (m Map[K, V]) ContainValue(value V) bool {
 	for _, v := range m {
-		if v == value {
+		if reflect.DeepEqual(v, value) {
 			return true
 		}
 	}
@@ -108,6 +111,20 @@ func (m Map[K, V]) Copy() Map[K, V] {
 	}
 
 	return res
+}
+
+func (m Map[K, V]) RemoveEmptyValues() {
+	for k, v := range m {
+		if IsEmpty(v) {
+			delete(m, k)
+		}
+	}
+}
+
+func (m Map[K, V]) ForEach(iterator func(k K, v V)) {
+	for k, v := range m {
+		iterator(k, v)
+	}
 }
 
 func MapOf[K, V comparable](items ...Item[K, V]) Map[K, V] {

@@ -1,4 +1,4 @@
-package core
+package flx
 
 import (
 	"encoding/json"
@@ -11,6 +11,7 @@ type JsonHandler interface {
 	MarshalIndent(any, string, string) ([]byte, error)
 	NewDecoder(io.Reader) *json.Decoder
 	NewEncoder(io.Writer) *json.Encoder
+	Validate([]byte) bool
 }
 
 type DefaultJsonHandler struct{}
@@ -33,4 +34,8 @@ func (DefaultJsonHandler) NewDecoder(reader io.Reader) *json.Decoder {
 
 func (DefaultJsonHandler) NewEncoder(writer io.Writer) *json.Encoder {
 	return json.NewEncoder(writer)
+}
+
+func (DefaultJsonHandler) Validate(data []byte) bool {
+	return json.Valid(data)
 }
