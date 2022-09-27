@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	. "github.com/amirdlt/flex/flx"
+	. "github.com/amirdlt/flex"
 )
 
 type PanicHandlerFunc[I Injector] func(i I, catch any) Result

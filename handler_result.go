@@ -1,4 +1,4 @@
-package flx
+package flex
 
 import "reflect"
 

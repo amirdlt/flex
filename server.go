@@ -1,9 +1,9 @@
-package flx
+package flex
 
 import (
 	"fmt"
-	. "github.com/amirdlt/flex/common"
 	"github.com/amirdlt/flex/db/mongo"
+	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
@@ -19,7 +19,7 @@ type Server[I Injector] struct {
 	logger            *log.Logger
 	rootPath          string
 	parent            *Server[I]
-	injector          func(*BasicInjector[I]) I
+	injector          func(*BasicInjector) I
 	mongoClients      mongo.Clients
 	groups            map[string]*Server[I]
 	jsonHandler       JsonHandler
@@ -27,7 +27,11 @@ type Server[I Injector] struct {
 	httpServer        *http.Server
 }
 
-func NewServer[I Injector](config M, injector func(baseInjector *BasicInjector[I]) I) *Server[I] {
+func NewServer[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Server[I] {
+	if injector == nil {
+		panic("injector can not be nil")
+	}
+
 	var i I
 	if val := reflect.ValueOf(i); val.Kind() != reflect.Ptr {
 		panic("expected a pointer as an handler injector, got " + val.Kind().String())
@@ -60,7 +64,14 @@ func NewServer[I Injector](config M, injector func(baseInjector *BasicInjector[I
 	} else {
 		s.httpServer = &http.Server{Handler: s.router}
 	}
+
 	return s
+}
+
+func NewDefaultServer() *Server[*BasicInjector] {
+	return NewServer(M{}, func(bi *BasicInjector) *BasicInjector {
+		return bi
+	})
 }
 
 func (s *Server[_]) LookupConfig(key string) (any, bool) {
@@ -196,6 +207,42 @@ func (s *Server[I]) Handle(method, path string, handler any, bodyInstance any) {
 	}
 
 	panic("invalid type of handler: " + reflect.TypeOf(handler).String())
+}
+
+func (s *Server[_]) Post(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodPost, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Get(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodGet, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Put(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodPut, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Delete(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodDelete, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Options(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodOptions, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Head(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodHead, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Patch(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodPatch, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Connect(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodConnect, path, handler, bodyInstance)
+}
+
+func (s *Server[_]) Trace(path string, handler any, bodyInstance any) {
+	s.Handle(http.MethodTrace, path, handler, bodyInstance)
 }
 
 func (s *Server[I]) WrapHandler(priority int, wrapper Wrapper[I]) *Server[I] {

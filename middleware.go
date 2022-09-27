@@ -1,8 +1,8 @@
-package flx
+package flex
 
 import (
 	"fmt"
-	. "github.com/amirdlt/flex/common"
+	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
 	"io"
 	"net/http"
@@ -72,7 +72,7 @@ func (m *Middleware[I]) mergeMiddleware(middleware *Middleware[I]) {
 
 func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 	switch bodyType.Kind() {
-	case reflect.Pointer, reflect.UnsafePointer, reflect.Chan, reflect.Func, reflect.Interface, reflect.Uintptr:
+	case reflect.Pointer, reflect.UnsafePointer, reflect.Chan, reflect.Func, reflect.Interface, reflect.Uintptr, reflect.Invalid:
 		panic("inappropriate body type's kind: " + bodyType.String())
 	}
 
@@ -87,7 +87,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 		}
 	})
 
-	send := func(i BasicInjector[I], result Result) {
+	send := func(i BasicInjector, result Result) {
 		if result.statusCode == 0 {
 			result.statusCode = http.StatusOK
 		}
@@ -114,12 +114,12 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 	}
 
 	server.router.Handle(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-		baseI := BasicInjector[I]{
-			owner:          server,
-			pathParameters: params,
-			r:              r,
-			w:              w,
-			extInjections:  M{},
+		baseI := BasicInjector{
+			defaultErrorCodes: server.defaultErrorCodes,
+			pathParameters:    params,
+			r:                 r,
+			w:                 w,
+			extInjections:     M{},
 		}
 
 		defer func() {
@@ -146,7 +146,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 				baseI.requestBody = string(arr)
 			}
 		default:
-			if !val.IsValid() || reflect.TypeOf(noBody) != bodyType {
+			if reflect.TypeOf(noBody) != bodyType {
 				if err := server.jsonHandler.NewDecoder(r.Body).Decode(requestBodyPtr.Interface()); err != nil {
 					send(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
 					return

@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	. "github.com/amirdlt/flex/common"
-	. "github.com/amirdlt/flex/flx"
+	. "github.com/amirdlt/flex"
 	"github.com/amirdlt/flex/middleware"
+	. "github.com/amirdlt/flex/util"
 	"log"
 	"net/http"
 	"os"
@@ -18,24 +18,23 @@ type userInfo struct {
 
 type injector struct {
 	Username string
-	*BasicInjector[*injector]
+	*BasicInjector
 }
 
 func main() {
 	type me struct {
 		Name string
 	}
+
 	m := Map[string, me]{
 		"adlt": me{"amirdlt"},
 	}
 
 	fmt.Println(m)
-	fmt.Println(m)
 
-	server := NewServer[*injector](M{}, func(b *BasicInjector[*injector]) *injector {
+	server := NewServer[*injector](M{}, func(i *BasicInjector) *injector {
 		return &injector{
-			Username:      "AmirDLT2000",
-			BasicInjector: b,
+			BasicInjector: i,
 		}
 	}).WrapHandler(201, middleware.Monitor(&injector{}, os.Stdout))
 

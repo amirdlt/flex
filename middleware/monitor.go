@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/amirdlt/flex/common"
-	. "github.com/amirdlt/flex/flx"
+	. "github.com/amirdlt/flex"
+	"github.com/amirdlt/flex/util"
 	"io"
 	"net"
 	"strings"
@@ -16,7 +16,7 @@ func Monitor[I Injector](_ I, w io.Writer) Wrapper[I] {
 			t := time.Now()
 
 			defer func() {
-				_, _ = fmt.Fprintln(w, common.Map[string, any]{
+				_, _ = fmt.Fprintln(w, util.Map[string, any]{
 					"duration":    time.Since(t),
 					"client":      net.ParseIP(strings.Trim(i.RemoteAddr()[:strings.LastIndex(i.RemoteAddr(), ":")], "[]")),
 					"client_str":  i.RemoteAddr(),

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	. "github.com/amirdlt/flex/flx"
+	. "github.com/amirdlt/flex"
 	"net"
 	"sync"
 	"time"

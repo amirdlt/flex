@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"context"
-	. "github.com/amirdlt/flex/common"
+	. "github.com/amirdlt/flex/util"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
