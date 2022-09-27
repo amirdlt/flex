@@ -27,7 +27,9 @@ type Server[I Injector] struct {
 	httpServer        *http.Server
 }
 
-func NewServer[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Server[I] {
+type BasicServer = Server[*BasicInjector]
+
+func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Server[I] {
 	if injector == nil {
 		panic("injector can not be nil")
 	}
@@ -68,8 +70,8 @@ func NewServer[I Injector](config M, injector func(baseInjector *BasicInjector) 
 	return s
 }
 
-func NewDefaultServer() *Server[*BasicInjector] {
-	return NewServer(M{}, func(bi *BasicInjector) *BasicInjector {
+func Default() *Server[*BasicInjector] {
+	return New(M{}, func(bi *BasicInjector) *BasicInjector {
 		return bi
 	})
 }
@@ -209,39 +211,39 @@ func (s *Server[I]) Handle(method, path string, handler any, bodyInstance any) {
 	panic("invalid type of handler: " + reflect.TypeOf(handler).String())
 }
 
-func (s *Server[_]) Post(path string, handler any, bodyInstance any) {
+func (s *Server[_]) POST(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodPost, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Get(path string, handler any, bodyInstance any) {
+func (s *Server[_]) GET(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodGet, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Put(path string, handler any, bodyInstance any) {
+func (s *Server[_]) PUT(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodPut, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Delete(path string, handler any, bodyInstance any) {
+func (s *Server[_]) DELETE(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodDelete, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Options(path string, handler any, bodyInstance any) {
+func (s *Server[_]) OPTIONS(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodOptions, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Head(path string, handler any, bodyInstance any) {
+func (s *Server[_]) HEAD(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodHead, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Patch(path string, handler any, bodyInstance any) {
+func (s *Server[_]) PATCH(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodPatch, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Connect(path string, handler any, bodyInstance any) {
+func (s *Server[_]) CONNECT(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodConnect, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) Trace(path string, handler any, bodyInstance any) {
+func (s *Server[_]) TRACE(path string, handler any, bodyInstance any) {
 	s.Handle(http.MethodTrace, path, handler, bodyInstance)
 }
 
@@ -250,7 +252,7 @@ func (s *Server[I]) WrapHandler(priority int, wrapper Wrapper[I]) *Server[I] {
 	return s
 }
 
-func getDefaultErrorCodes() map[int]string {
+func getDefaultErrorCodes() Map[int, string] {
 	return map[int]string{
 		http.StatusBadRequest:          "ERR_BAD_REQUEST",
 		http.StatusInternalServerError: "ERR_INTERNAL_SERVER",

@@ -8,7 +8,7 @@ type Result struct {
 	extValue     any
 }
 
-func (h Result) getExtValue() any {
+func (h Result) GetExtValue() any {
 	if h.extValue == nil {
 		return nil
 	}

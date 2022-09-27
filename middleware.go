@@ -10,14 +10,17 @@ import (
 )
 
 type (
-	Handler[I Injector] func(I) Result
-	Wrapper[I Injector] func(Handler[I]) Handler[I]
-
+	Handler[I Injector]    func(I) Result
+	Wrapper[I Injector]    func(Handler[I]) Handler[I]
 	Middleware[I Injector] struct {
 		server   *Server[I]
 		handler  Handler[I]
 		wrappers Map[int, []Wrapper[I]]
 	}
+
+	BasicHandler    = Handler[*BasicInjector]
+	BasicWrapper    = Wrapper[*BasicInjector]
+	BasicMiddleware = Middleware[*BasicInjector]
 )
 
 func NewMiddleware[I Injector](handler Handler[I]) *Middleware[I] {
@@ -107,8 +110,8 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 			i.SetContentType("application/json")
 		}
 
-		i.response().WriteHeader(result.statusCode)
-		if _, err := fmt.Fprintf(i.response(), "%s", result.responseBody); err != nil {
+		i.w.WriteHeader(result.statusCode)
+		if _, err := fmt.Fprintf(i.w, "%s", result.responseBody); err != nil {
 			server.logger.Println("err while writing response, err" + err.Error())
 		}
 	}
@@ -120,6 +123,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 			r:                 r,
 			w:                 w,
 			extInjections:     M{},
+			logger:            server.logger,
 		}
 
 		defer func() {

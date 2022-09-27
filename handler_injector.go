@@ -5,13 +5,15 @@ import (
 	"fmt"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"log"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 )
 
 type NoBody struct{}
 
-var noBody = NoBody{}
+var noBody NoBody
 
 type Injector interface {
 	Wrap(response any, statusCode int, extValues ...any) Result
@@ -36,8 +38,6 @@ type Injector interface {
 	WrapTooManyRequestsErr(_error string, extValues ...any) Result
 	Query(key string) string
 	DefaultQuery(key, defaultValue string) string
-	request() *http.Request
-	response() http.ResponseWriter
 	RequestBody() any
 	WrapTextPlain(response any, statusCode int, extValues ...any) Result
 	WrapWithContentType(response any, statusCode int, contentType string, extValues ...any) Result
@@ -48,6 +48,12 @@ type Injector interface {
 	SetContentType(contentType string)
 	GetDataMap() Map[string, any]
 	RemoteAddr() string
+	ParseForm() error
+	ParseMultipartForm(maxMemory int64) error
+	FormValue(key string) string
+	PostFormValue(key string) string
+	FormFile(key string) (multipart.File, *multipart.FileHeader, error)
+	Logger() *log.Logger
 }
 
 type BasicInjector struct {
@@ -57,6 +63,7 @@ type BasicInjector struct {
 	requestBody       any
 	extInjections     Map[string, any]
 	defaultErrorCodes Map[int, string]
+	logger            *log.Logger
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
@@ -186,14 +193,6 @@ func (s *BasicInjector) DefaultQuery(key, defaultValue string) string {
 	return defaultValue
 }
 
-func (s *BasicInjector) request() *http.Request {
-	return s.r
-}
-
-func (s *BasicInjector) response() http.ResponseWriter {
-	return s.w
-}
-
 func (s *BasicInjector) GetRequestHeader(key string) string {
 	return s.GetRequestHeaders().Get(key)
 }
@@ -219,6 +218,26 @@ func (s *BasicInjector) RemoteAddr() string {
 	return s.r.RemoteAddr
 }
 
-func (s *BasicInjector) Forms() {
+func (s *BasicInjector) ParseForm() error {
+	return s.r.ParseForm()
+}
 
+func (s *BasicInjector) ParseMultipartForm(maxMemory int64) error {
+	return s.r.ParseMultipartForm(maxMemory)
+}
+
+func (s *BasicInjector) FormValue(key string) string {
+	return s.r.FormValue(key)
+}
+
+func (s *BasicInjector) PostFormValue(key string) string {
+	return s.r.PostFormValue(key)
+}
+
+func (s *BasicInjector) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
+	return s.r.FormFile(key)
+}
+
+func (s *BasicInjector) Logger() *log.Logger {
+	return s.logger
 }
