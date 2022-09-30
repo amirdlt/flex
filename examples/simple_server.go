@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/amirdlt/ffvm"
 	. "github.com/amirdlt/flex"
 	. "github.com/amirdlt/flex/util"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"time"
 )
 
 type user struct {
-	Name        string `json:"name" bson:"name"`
+	Name        string `json:"name" bson:"name" ffvm:",min_len=10"`
 	Age         int    `json:"age" bson:"age"`
 	PhoneNumber string `json:"phoneNumber" bson:"phoneNumber"`
 	Id          string `json:"id" bson:"id"`
@@ -46,6 +48,10 @@ func simpleServer() {
 
 	s.Group("/user").POST("/create", func(i *in) Result {
 		newUser := i.RequestBody().(user)
+
+		t := time.Now()
+		fmt.Println(ffvm.Validate(&newUser))
+		fmt.Println(time.Since(t).Nanoseconds())
 
 		if newUser.Name == "" {
 			return i.WrapBadRequestErr("name must be provided")
