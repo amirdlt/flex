@@ -120,7 +120,7 @@ func (c *Collection) Search(ctx context.Context, sc SearchConstraints, v any) (i
 		}
 	} else {
 		cursor, err := c.Find(ctx, filter, options.Find().
-			SetSort(bson.M{"received_at": -1}).SetSkip(int64(sc.Skip)).SetLimit(int64(sc.Limit)))
+			SetSkip(int64(sc.Skip)).SetLimit(int64(sc.Limit)))
 		if nil != err {
 			return -1, err
 		}
@@ -129,10 +129,19 @@ func (c *Collection) Search(ctx context.Context, sc SearchConstraints, v any) (i
 			return -1, err
 		}
 
-		return reflect.ValueOf(v).Len(), nil
+		return reflect.ValueOf(v).Elem().Len(), nil
 	}
 }
 
 func (c *Collection) Exists(ctx context.Context, filter bson.M) bool {
 	return !errors.Is(c.FindOne(ctx, filter).Err(), mongo.ErrNoDocuments)
+}
+
+func (c *Collection) GetById(ctx context.Context, id, v any, idKey ...string) error {
+	_idKey := "_id"
+	if len(idKey) > 0 {
+		_idKey = idKey[0]
+	}
+
+	return c.FindOne(ctx, bson.M{_idKey: id}).Decode(v)
 }
