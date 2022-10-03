@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	. "github.com/amirdlt/flex/util"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,7 +33,7 @@ func (c *Collection) Search(ctx context.Context, sc SearchConstraints, v any) (i
 	var filter bson.D
 	var orTerms bson.A
 
-	stringChecker := func(v interface{}) bson.M {
+	stringChecker := func(v any) bson.M {
 		value := v.(string)
 		var condition bson.M
 		if sc.Regex.Pattern != "" {
@@ -130,4 +131,8 @@ func (c *Collection) Search(ctx context.Context, sc SearchConstraints, v any) (i
 
 		return reflect.ValueOf(v).Len(), nil
 	}
+}
+
+func (c *Collection) Exists(ctx context.Context, filter bson.M) bool {
+	return !errors.Is(c.FindOne(ctx, filter).Err(), mongo.ErrNoDocuments)
 }

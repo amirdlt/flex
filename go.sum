@@ -1,5 +1,5 @@
-github.com/amirdlt/ffvm v0.0.0-20220930174155-de11db08f808 h1:mrPeSEA6VxEi0/mKqOUak2ru2b7n4AuTkZMck0A3oy4=
-github.com/amirdlt/ffvm v0.0.0-20220930174155-de11db08f808/go.mod h1:wZ4pyn4u26KLLXHrTCWgO49L5jqCAqLBC2mpgC/nkYQ=
+github.com/amirdlt/ffvm v0.0.0-20220930204214-bc4640d7f8e4 h1:JPcBH9blrzdWvU9FEeMPdX6FCPCDnyEfCaehXsIG7OE=
+github.com/amirdlt/ffvm v0.0.0-20220930204214-bc4640d7f8e4/go.mod h1:wZ4pyn4u26KLLXHrTCWgO49L5jqCAqLBC2mpgC/nkYQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

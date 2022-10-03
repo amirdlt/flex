@@ -12,7 +12,7 @@ import (
 )
 
 type user struct {
-	Name        string `json:"name" bson:"name" ffvm:",min_len=10"`
+	Name        string `json:"name" bson:"name" ffvm:",min_len=10;regex=^a"`
 	Age         int    `json:"age" bson:"age"`
 	PhoneNumber string `json:"phoneNumber" bson:"phoneNumber"`
 	Id          string `json:"id" bson:"id"`
