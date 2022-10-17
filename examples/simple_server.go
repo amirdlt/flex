@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"net/http"
 	"time"
 )
 
@@ -89,6 +90,8 @@ func simpleServer() {
 
 		return i.WrapOk(user)
 	}, NoBody{})
+
+	s.GetRouter().Handler(http.MethodGet, "/docs", http.FileServer(http.Dir("./docs")))
 
 	_ = s.Run()
 }

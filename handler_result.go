@@ -6,6 +6,7 @@ type Result struct {
 	responseBody any
 	statusCode   int
 	extValue     any
+	terminate    bool
 }
 
 func (h Result) GetExtValue() any {

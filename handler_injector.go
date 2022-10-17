@@ -54,6 +54,8 @@ type Injector interface {
 	PostFormValue(key string) string
 	FormFile(key string) (multipart.File, *multipart.FileHeader, error)
 	Logger() *log.Logger
+	request() *http.Request
+	response() http.ResponseWriter
 }
 
 type BasicInjector struct {
@@ -240,4 +242,12 @@ func (s *BasicInjector) FormFile(key string) (multipart.File, *multipart.FileHea
 
 func (s *BasicInjector) Logger() *log.Logger {
 	return s.logger
+}
+
+func (s *BasicInjector) response() http.ResponseWriter {
+	return s.w
+}
+
+func (s *BasicInjector) request() *http.Request {
+	return s.r
 }

@@ -160,6 +160,9 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 			}
 		}
 
-		send(baseI, handler(server.injector(&baseI)))
+		result := handler(server.injector(&baseI))
+		if !result.terminate {
+			send(baseI, result)
+		}
 	})
 }

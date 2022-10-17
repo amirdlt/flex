@@ -252,6 +252,14 @@ func (s *Server[I]) WrapHandler(priority int, wrapper Wrapper[I]) *Server[I] {
 	return s
 }
 
+func (s *Server[I]) FileServer(path, root string) {
+	fs := http.FileServer(http.Dir(root))
+	s.GET(path, func(i I) Result {
+		fs.ServeHTTP(i.response(), i.request())
+		return Result{terminate: true}
+	}, NoBody{})
+}
+
 func getDefaultErrorCodes() Map[int, string] {
 	return map[int]string{
 		http.StatusBadRequest:          "ERR_BAD_REQUEST",
