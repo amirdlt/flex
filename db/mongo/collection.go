@@ -133,8 +133,14 @@ func (c *Collection) Search(ctx context.Context, sc SearchConstraints, v any) (i
 	}
 }
 
-func (c *Collection) Exists(ctx context.Context, filter bson.M) bool {
-	return !errors.Is(c.FindOne(ctx, filter).Err(), mongo.ErrNoDocuments)
+func (c *Collection) Exists(ctx context.Context, filter bson.M) (bool, error) {
+	if err := c.FindOne(ctx, filter).Err(); err == nil {
+		return true, nil
+	} else if errors.Is(err, mongo.ErrNoDocuments) {
+		return false, nil
+	} else {
+		return false, err
+	}
 }
 
 func (c *Collection) GetById(ctx context.Context, id, v any, idKey ...string) error {
