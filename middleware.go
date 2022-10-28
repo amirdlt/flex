@@ -95,14 +95,16 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 			result.statusCode = http.StatusOK
 		}
 
-		switch result.responseBody.(type) {
-		case []byte, string, error: // ready already
-		default:
-			if marshalled, err := server.jsonHandler.Marshal(result.responseBody); err != nil {
-				result = i.WrapInternalErr("error in json marshalling, err=" + err.Error())
-				i.SetContentType("application/json")
-			} else {
-				result.responseBody = marshalled
+		if result.responseBody != nil {
+			switch result.responseBody.(type) {
+			case []byte, string, error: // ready already
+			default:
+				if marshalled, err := server.jsonHandler.Marshal(result.responseBody); err != nil {
+					result = i.WrapInternalErr("error in json marshalling, err=" + err.Error())
+					i.SetContentType("application/json")
+				} else {
+					result.responseBody = marshalled
+				}
 			}
 		}
 
