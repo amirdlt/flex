@@ -22,7 +22,7 @@ func (c Client) GetDatabase(name string) Database {
 	}
 
 	c.databases[name] = Database{
-		collections: Map[string, Collection]{},
+		collections: Map[string, *Collection]{},
 		Database:    c.Database(name),
 	}
 

@@ -6,16 +6,16 @@ import (
 )
 
 type Database struct {
-	collections Map[string, Collection]
+	collections Map[string, *Collection]
 	*mongo.Database
 }
 
-func (d Database) GetCollection(name string) Collection {
+func (d Database) GetCollection(name string) *Collection {
 	if col, exist := d.collections[name]; exist {
 		return col
 	}
 
-	d.collections[name] = Collection{
+	d.collections[name] = &Collection{
 		Collection: d.Collection(name),
 	}
 
