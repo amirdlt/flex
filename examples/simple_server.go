@@ -38,7 +38,7 @@ type history struct {
 }
 
 func simpleServer() {
-	s := New(M{}, func(i *BasicInjector) *in {
+	s := New(M{}, func(i *BasicInjector, _ *Server[*in]) *in {
 		return &in{
 			BasicInjector: i,
 		}
@@ -92,6 +92,8 @@ func simpleServer() {
 	}, NoBody{})
 
 	s.GetRouter().Handler(http.MethodGet, "/docs", http.FileServer(http.Dir("./docs")))
+
+	fmt.Println(s.GetRouter().GetRoutesMap())
 
 	_ = s.Run()
 }

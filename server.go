@@ -15,11 +15,11 @@ import (
 type Server[I Injector] struct {
 	defaultErrorCodes map[int]string
 	config            M
-	router            *httprouter.Router
+	router            Router
 	logger            *log.Logger
 	rootPath          string
 	parent            *Server[I]
-	injector          func(*BasicInjector) I
+	injector          func(*BasicInjector, *Server[I]) I
 	mongoClients      mongo.Clients
 	groups            map[string]*Server[I]
 	jsonHandler       JsonHandler
@@ -29,7 +29,7 @@ type Server[I Injector] struct {
 
 type BasicServer = Server[*BasicInjector]
 
-func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Server[I] {
+func New[I Injector](config M, injector func(baseInjector *BasicInjector, server *Server[I]) I) *Server[I] {
 	if injector == nil {
 		panic("injector can not be nil")
 	}
@@ -44,7 +44,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config:            config,
 		parent:            nil,
 		rootPath:          "",
-		router:            httprouter.New(),
+		router:            Router{Router: httprouter.New(), apis: map[string][]string{}},
 		defaultErrorCodes: getDefaultErrorCodes(),
 		injector:          injector,
 		mongoClients:      mongo.Clients{},
@@ -71,7 +71,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 }
 
 func Default() *Server[*BasicInjector] {
-	return New(M{}, func(bi *BasicInjector) *BasicInjector {
+	return New(M{}, func(bi *BasicInjector, _ *Server[*BasicInjector]) *BasicInjector {
 		return bi
 	})
 }
@@ -127,7 +127,7 @@ func (s *Server[I]) Group(path string) *Server[I] {
 	} else {
 		g = &Server[I]{
 			rootPath:          s.rootPath + path,
-			logger:            log.New(os.Stderr, s.rootPath+path, log.LstdFlags),
+			logger:            log.New(os.Stderr, s.rootPath+path+" ", log.LstdFlags),
 			parent:            s,
 			router:            s.router,
 			defaultErrorCodes: CopyMap(s.defaultErrorCodes),
@@ -191,7 +191,7 @@ func (s *Server[_]) Cleanup() {
 	s.mongoClients.ClearAllClients()
 }
 
-func (s *Server[_]) GetRouter() *httprouter.Router {
+func (s *Server[_]) GetRouter() Router {
 	return s.router
 }
 
