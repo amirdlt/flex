@@ -195,8 +195,12 @@ func (s *Server[_]) GetRouter() Router {
 	return s.router
 }
 
-func (s *Server[I]) Handle(method, path string, handler any, bodyInstance any) {
-	bodyType := reflect.TypeOf(bodyInstance)
+func (s *Server[I]) Handle(method, path string, handler any, bodyInstance ...any) {
+	if len(bodyInstance) == 0 {
+		bodyInstance = []any{[]byte{}}
+	}
+
+	bodyType := reflect.TypeOf(bodyInstance[0])
 	if h, ok := handler.(func(I) Result); ok {
 		s.middleware.handler = h
 		s.middleware.register(method, path, bodyType)
@@ -211,39 +215,39 @@ func (s *Server[I]) Handle(method, path string, handler any, bodyInstance any) {
 	panic("invalid type of handler: " + reflect.TypeOf(handler).String())
 }
 
-func (s *Server[_]) POST(path string, handler any, bodyInstance any) {
+func (s *Server[_]) POST(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodPost, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) GET(path string, handler any, bodyInstance any) {
+func (s *Server[_]) GET(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodGet, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) PUT(path string, handler any, bodyInstance any) {
+func (s *Server[_]) PUT(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodPut, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) DELETE(path string, handler any, bodyInstance any) {
+func (s *Server[_]) DELETE(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodDelete, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) OPTIONS(path string, handler any, bodyInstance any) {
+func (s *Server[_]) OPTIONS(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodOptions, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) HEAD(path string, handler any, bodyInstance any) {
+func (s *Server[_]) HEAD(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodHead, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) PATCH(path string, handler any, bodyInstance any) {
+func (s *Server[_]) PATCH(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodPatch, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) CONNECT(path string, handler any, bodyInstance any) {
+func (s *Server[_]) CONNECT(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodConnect, path, handler, bodyInstance)
 }
 
-func (s *Server[_]) TRACE(path string, handler any, bodyInstance any) {
+func (s *Server[_]) TRACE(path string, handler any, bodyInstance ...any) {
 	s.Handle(http.MethodTrace, path, handler, bodyInstance)
 }
 
