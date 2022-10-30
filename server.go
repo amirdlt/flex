@@ -216,39 +216,39 @@ func (s *Server[I]) Handle(method, path string, handler any, bodyInstance ...any
 }
 
 func (s *Server[_]) POST(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodPost, path, handler, bodyInstance)
+	s.Handle(http.MethodPost, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) GET(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodGet, path, handler, bodyInstance)
+	s.Handle(http.MethodGet, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) PUT(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodPut, path, handler, bodyInstance)
+	s.Handle(http.MethodPut, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) DELETE(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodDelete, path, handler, bodyInstance)
+	s.Handle(http.MethodDelete, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) OPTIONS(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodOptions, path, handler, bodyInstance)
+	s.Handle(http.MethodOptions, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) HEAD(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodHead, path, handler, bodyInstance)
+	s.Handle(http.MethodHead, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) PATCH(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodPatch, path, handler, bodyInstance)
+	s.Handle(http.MethodPatch, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) CONNECT(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodConnect, path, handler, bodyInstance)
+	s.Handle(http.MethodConnect, path, handler, bodyInstance...)
 }
 
 func (s *Server[_]) TRACE(path string, handler any, bodyInstance ...any) {
-	s.Handle(http.MethodTrace, path, handler, bodyInstance)
+	s.Handle(http.MethodTrace, path, handler, bodyInstance...)
 }
 
 func (s *Server[I]) WrapHandler(priority int, wrapper Wrapper[I]) *Server[I] {
