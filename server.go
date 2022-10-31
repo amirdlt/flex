@@ -5,11 +5,13 @@ import (
 	"github.com/amirdlt/flex/db/mongo"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type Server[I Injector] struct {
@@ -25,6 +27,7 @@ type Server[I Injector] struct {
 	jsonHandler       JsonHandler
 	middleware        *Middleware[I]
 	httpServer        *http.Server
+	startTime         *time.Time
 }
 
 type BasicServer = Server[*BasicInjector]
@@ -56,6 +59,10 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		jsonHandler:       DefaultJsonHandler{},
 	}
 
+	if loggerOut, exist := s.LookupConfig("logger_out"); exist {
+		s.logger = log.New(loggerOut.(io.Writer), "", log.LstdFlags)
+	}
+
 	s.middleware = newMiddleware(s)
 
 	if server, exist := s.LookupConfig("server"); exist {
@@ -78,6 +85,10 @@ func Default() *Server[*BasicInjector] {
 	return New(M{}, func(bi *BasicInjector) *BasicInjector {
 		return bi
 	})
+}
+
+func (s *Server[_]) StartTime() time.Time {
+	return *s.startTime
 }
 
 func (s *Server[_]) LookupConfig(key string) (any, bool) {
@@ -129,9 +140,16 @@ func (s *Server[I]) Group(path string) *Server[I] {
 	if g, exists := s.groups[path]; exists {
 		return g
 	} else {
+		var loggerOut io.Writer
+		if logger, exist := s.LookupConfig("logger_out"); exist {
+			loggerOut = logger.(io.Writer)
+		} else {
+			loggerOut = os.Stderr
+		}
+
 		g = &Server[I]{
 			rootPath:          s.rootPath + path,
-			logger:            log.New(os.Stderr, s.rootPath+path+" ", log.LstdFlags),
+			logger:            log.New(loggerOut, s.rootPath+path+" ", log.LstdFlags),
 			parent:            s,
 			router:            s.router,
 			defaultErrorCodes: CopyMap(s.defaultErrorCodes),
@@ -139,13 +157,13 @@ func (s *Server[I]) Group(path string) *Server[I] {
 			groups:            map[string]*Server[I]{},
 			mongoClients:      s.mongoClients,
 			jsonHandler:       s.jsonHandler,
+			startTime:         s.startTime,
 		}
 
 		g.middleware = s.middleware.serverMiddlewareClone(g)
 		s.groups[path] = g
 		return g
 	}
-
 }
 
 func (s *Server[_]) Run(addr ...string) error {
@@ -175,6 +193,9 @@ func (s *Server[_]) Run(addr ...string) error {
 
 		s.httpServer.Addr = address
 	}
+
+	t := time.Now()
+	s.startTime = &t
 
 	s.logger.Println("server is listening on: " + s.httpServer.Addr)
 	return s.httpServer.ListenAndServe()

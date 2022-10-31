@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"reflect"
+	"sync"
 )
 
 type M = map[string]any
@@ -147,4 +148,16 @@ func CopyMap[K comparable, V any](m map[K]V) map[K]V {
 	}
 
 	return res
+}
+
+type SynchronizedMap[K comparable, V any] struct {
+	Map[K, V]
+	*sync.RWMutex
+}
+
+func NewSynchronizedMap[K comparable, V any](_ K, _ V) SynchronizedMap[K, V] {
+	return SynchronizedMap[K, V]{
+		Map:     Map[K, V]{},
+		RWMutex: &sync.RWMutex{},
+	}
 }
