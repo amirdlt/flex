@@ -53,7 +53,6 @@ type Injector interface {
 	FormValue(key string) string
 	PostFormValue(key string) string
 	FormFile(key string) (multipart.File, *multipart.FileHeader, error)
-	Logger() *log.Logger
 	RawPath() string
 	Path() string
 	request() *http.Request
@@ -243,16 +242,77 @@ func (s *BasicInjector) FormFile(key string) (multipart.File, *multipart.FileHea
 	return s.r.FormFile(key)
 }
 
-func (s *BasicInjector) Logger() *log.Logger {
-	return s.logger
-}
-
 func (s *BasicInjector) Path() string {
 	return s.r.RequestURI
 }
 
 func (s *BasicInjector) RawPath() string {
 	return s.rawPath
+}
+
+func (s *BasicInjector) LogPrintln(v ...any) *BasicInjector {
+	s.logger.Println(append([]any{"path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogPrint(v ...any) *BasicInjector {
+	s.logger.Print(append([]any{"path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogPrintf(format string, v ...any) *BasicInjector {
+	s.logger.Printf("path="+s.Path()+" "+format, v...)
+	return s
+}
+
+func (s *BasicInjector) LogTrace(v ...any) *BasicInjector {
+	s.logger.Println(append([]any{"[TRACE] path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogDebug(v ...any) *BasicInjector {
+	s.logger.Println(append([]any{"[DEBUG] path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogInfo(v ...any) *BasicInjector {
+	s.logger.Println(append([]any{"[INFO] path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogWarn(v ...any) *BasicInjector {
+	s.logger.Println(append([]any{"[WARN] path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogError(v ...any) *BasicInjector {
+	s.logger.Println(append([]any{"[ERROR] path=" + s.Path()}, v...)...)
+	return s
+}
+
+func (s *BasicInjector) LogTracef(format string, v ...any) *BasicInjector {
+	s.logger.Printf("[TRACE] path="+s.Path()+" "+format, v...)
+	return s
+}
+
+func (s *BasicInjector) LogDebugf(format string, v ...any) *BasicInjector {
+	s.logger.Printf("[DEBUG] path="+s.Path()+" "+format, v...)
+	return s
+}
+
+func (s *BasicInjector) LogInfof(format string, v ...any) *BasicInjector {
+	s.logger.Printf("[INFO] path="+s.Path()+" "+format, v...)
+	return s
+}
+
+func (s *BasicInjector) LogWarnf(format string, v ...any) *BasicInjector {
+	s.logger.Printf("[WARN] path="+s.Path()+" "+format, v...)
+	return s
+}
+
+func (s *BasicInjector) LogErrorf(format string, v ...any) *BasicInjector {
+	s.logger.Printf("[ERROR] path="+s.Path()+" "+format, v...)
+	return s
 }
 
 func (s *BasicInjector) response() http.ResponseWriter {
