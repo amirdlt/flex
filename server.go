@@ -89,7 +89,7 @@ func (s *Server[_]) Config(key string) any {
 	return s.config[key]
 }
 
-func (s *Server[_]) GetMongoClients() mongo.Clients {
+func (s *Server[_]) MongoClients() mongo.Clients {
 	return s.mongoClients
 }
 
@@ -97,7 +97,7 @@ func (s *Server[_]) SetJsonHandler(jsonHandler JsonHandler) {
 	s.jsonHandler = jsonHandler
 }
 
-func (s *Server[_]) GetRootPath() string {
+func (s *Server[_]) RootPath() string {
 	return s.rootPath
 }
 
@@ -131,7 +131,7 @@ func (s *Server[I]) Group(path string) *Server[I] {
 	} else {
 		g = &Server[I]{
 			rootPath:          s.rootPath + path,
-			logger:            log.New(os.Stderr, s.rootPath+path, log.LstdFlags),
+			logger:            log.New(os.Stderr, s.rootPath+path+" ", log.LstdFlags),
 			parent:            s,
 			router:            s.router,
 			defaultErrorCodes: CopyMap(s.defaultErrorCodes),
