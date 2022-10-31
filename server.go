@@ -176,6 +176,7 @@ func (s *Server[_]) Run(addr ...string) error {
 		s.httpServer.Addr = address
 	}
 
+	s.logger.Println("server is listening on: " + s.httpServer.Addr)
 	return s.httpServer.ListenAndServe()
 }
 
