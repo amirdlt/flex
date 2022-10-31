@@ -156,7 +156,7 @@ func (s *BasicInjector) WrapInvalidBody(_error string, extValues ...any) Result 
 }
 
 func (s *BasicInjector) WrapNotFoundErr(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusFound], http.StatusNotFound, extValues...)
+	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusNotFound], http.StatusNotFound, extValues...)
 }
 
 func (s *BasicInjector) WrapForbiddenErr(_error string, extValues ...any) Result {
