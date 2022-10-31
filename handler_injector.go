@@ -20,9 +20,9 @@ type Injector interface {
 	Context() context.Context
 	AddResponseHeader(key, value string)
 	SetResponseHeader(key, value string)
-	GetResponseHeaders() http.Header
+	ResponseHeaders() http.Header
 	URL() *url.URL
-	GetRequestHeaders() http.Header
+	RequestHeaders() http.Header
 	GetRequestHeader(key string) string
 	Host() string
 	Method() string
@@ -43,10 +43,10 @@ type Injector interface {
 	WrapWithContentType(response any, statusCode int, contentType string, extValues ...any) Result
 	PathParameter(key string) string
 	SetValue(key string, value any)
-	GetValue(key string) any
+	Value(key string) any
 	LookupValue(key string) (any, bool)
 	SetContentType(contentType string)
-	GetDataMap() Map[string, any]
+	DataMap() Map[string, any]
 	RemoteAddr() string
 	ParseForm() error
 	ParseMultipartForm(maxMemory int64) error
@@ -54,6 +54,8 @@ type Injector interface {
 	PostFormValue(key string) string
 	FormFile(key string) (multipart.File, *multipart.FileHeader, error)
 	Logger() *log.Logger
+	RawPath() string
+	Path() string
 	request() *http.Request
 	response() http.ResponseWriter
 }
@@ -65,6 +67,7 @@ type BasicInjector struct {
 	requestBody       any
 	extInjections     Map[string, any]
 	defaultErrorCodes Map[int, string]
+	rawPath           string
 	logger            *log.Logger
 }
 
@@ -88,7 +91,7 @@ func (s *BasicInjector) SetResponseHeader(key, value string) {
 	s.w.Header().Set(key, value)
 }
 
-func (s *BasicInjector) GetResponseHeaders() http.Header {
+func (s *BasicInjector) ResponseHeaders() http.Header {
 	return s.w.Header()
 }
 
@@ -96,7 +99,7 @@ func (s *BasicInjector) URL() *url.URL {
 	return s.r.URL
 }
 
-func (s *BasicInjector) GetRequestHeaders() http.Header {
+func (s *BasicInjector) RequestHeaders() http.Header {
 	return s.r.Header
 }
 
@@ -196,14 +199,14 @@ func (s *BasicInjector) DefaultQuery(key, defaultValue string) string {
 }
 
 func (s *BasicInjector) GetRequestHeader(key string) string {
-	return s.GetRequestHeaders().Get(key)
+	return s.RequestHeaders().Get(key)
 }
 
 func (s *BasicInjector) SetValue(key string, value any) {
 	s.extInjections[key] = value
 }
 
-func (s *BasicInjector) GetValue(key string) any {
+func (s *BasicInjector) Value(key string) any {
 	return s.extInjections[key]
 }
 
@@ -212,7 +215,7 @@ func (s *BasicInjector) LookupValue(key string) (any, bool) {
 	return v, exist
 }
 
-func (s *BasicInjector) GetDataMap() Map[string, any] {
+func (s *BasicInjector) DataMap() Map[string, any] {
 	return s.extInjections
 }
 
@@ -242,6 +245,14 @@ func (s *BasicInjector) FormFile(key string) (multipart.File, *multipart.FileHea
 
 func (s *BasicInjector) Logger() *log.Logger {
 	return s.logger
+}
+
+func (s *BasicInjector) Path() string {
+	return s.r.RequestURI
+}
+
+func (s *BasicInjector) RawPath() string {
+	return s.rawPath
 }
 
 func (s *BasicInjector) response() http.ResponseWriter {

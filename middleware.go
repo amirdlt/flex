@@ -108,7 +108,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 			}
 		}
 
-		if _, exist := i.GetResponseHeaders()["Content-Type"]; !exist {
+		if _, exist := i.ResponseHeaders()["Content-Type"]; !exist {
 			i.SetContentType("application/json")
 		}
 
@@ -127,6 +127,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 			r:                 r,
 			w:                 w,
 			extInjections:     M{},
+			rawPath:           path,
 			logger:            server.logger,
 		}
 

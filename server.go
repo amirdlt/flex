@@ -15,7 +15,7 @@ import (
 type Server[I Injector] struct {
 	defaultErrorCodes map[int]string
 	config            M
-	router            *httprouter.Router
+	router            Router
 	logger            *log.Logger
 	rootPath          string
 	parent            *Server[I]
@@ -48,7 +48,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config:            config,
 		parent:            nil,
 		rootPath:          "",
-		router:            httprouter.New(),
+		router:            Router{Router: httprouter.New(), apis: map[string][]string{}},
 		defaultErrorCodes: getDefaultErrorCodes(),
 		injector:          injector,
 		mongoClients:      mongo.Clients{},
@@ -196,7 +196,7 @@ func (s *Server[_]) Cleanup() {
 	s.mongoClients.ClearAllClients()
 }
 
-func (s *Server[_]) GetRouter() *httprouter.Router {
+func (s *Server[_]) Router() Router {
 	return s.router
 }
 
