@@ -8,7 +8,7 @@ import (
 func simpleDefaultServer() {
 	server := Default().WrapHandler(0, func(h Handler[*BasicInjector]) Handler[*BasicInjector] {
 		return func(i *BasicInjector) Result {
-			i.Logger().Println("Pinged: ", i.RemoteAddr())
+			i.LogPrintln("Pinged: ", i.RemoteAddr())
 			return h(i)
 		}
 	})
