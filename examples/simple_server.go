@@ -45,7 +45,7 @@ func simpleServer() {
 	})
 
 	s.SetDefaultMongoClient("mongodb://localhost:27017")
-	db := s.GetDefaultMongoClient().GetDatabase("simple_app")
+	db := s.DefaultMongoClient().GetDatabase("simple_app")
 
 	s.Group("/user").POST("/create", func(i *in) Result {
 		newUser := i.RequestBody().(user)

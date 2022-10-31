@@ -39,6 +39,10 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		panic("expected a pointer as an handler injector, got " + val.Kind().String())
 	}
 
+	if config == nil {
+		config = M{}
+	}
+
 	s := &Server[I]{
 		logger:            log.Default(),
 		config:            config,
@@ -81,7 +85,7 @@ func (s *Server[_]) LookupConfig(key string) (any, bool) {
 	return v, exist
 }
 
-func (s *Server[_]) GetConfig(key string) any {
+func (s *Server[_]) Config(key string) any {
 	return s.config[key]
 }
 
@@ -97,7 +101,7 @@ func (s *Server[_]) GetRootPath() string {
 	return s.rootPath
 }
 
-func (s *Server[_]) GetLogger() *log.Logger {
+func (s *Server[_]) Logger() *log.Logger {
 	return s.logger
 }
 
@@ -183,7 +187,7 @@ func (s *Server[_]) GetMongoClient(name string) mongo.Client {
 	panic("no client found with this name: " + name)
 }
 
-func (s *Server[_]) GetDefaultMongoClient() mongo.Client {
+func (s *Server[_]) DefaultMongoClient() mongo.Client {
 	return s.GetMongoClient("")
 }
 
