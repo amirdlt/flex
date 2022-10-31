@@ -46,6 +46,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config = M{}
 	}
 
+	log.Default().SetFlags(log.LstdFlags | log.Lshortfile)
 	s := &Server[I]{
 		logger:            log.Default(),
 		config:            config,
@@ -60,7 +61,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 	}
 
 	if loggerOut, exist := s.LookupConfig("logger_out"); exist {
-		s.logger = log.New(loggerOut.(io.Writer), "", log.LstdFlags)
+		s.logger = log.New(loggerOut.(io.Writer), "", log.LstdFlags|log.Lshortfile)
 	}
 
 	s.middleware = newMiddleware(s)
@@ -149,7 +150,7 @@ func (s *Server[I]) Group(path string) *Server[I] {
 
 		g = &Server[I]{
 			rootPath:          s.rootPath + path,
-			logger:            log.New(loggerOut, s.rootPath+path+" ", log.LstdFlags),
+			logger:            log.New(loggerOut, s.rootPath+path+" ", log.LstdFlags|log.Lshortfile),
 			parent:            s,
 			router:            s.router,
 			defaultErrorCodes: CopyMap(s.defaultErrorCodes),
