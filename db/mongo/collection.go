@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"reflect"
+	"time"
 )
 
 type Collection struct {
@@ -150,4 +151,26 @@ func (c *Collection) GetById(ctx context.Context, id, v any, idKey ...string) er
 	}
 
 	return c.FindOne(ctx, bson.M{_idKey: id}).Decode(v)
+}
+
+func (c *Collection) Find(ctx context.Context, filter any, opts ...*options.FindOptions) (*mongo.Cursor, error) {
+	_options := options.Find().SetAllowDiskUse(true).SetNoCursorTimeout(true)
+	switch len(opts) {
+	case 0:
+	default:
+		_options = opts[0].SetAllowDiskUse(true).SetNoCursorTimeout(true)
+	}
+
+	return c.Collection.Find(ctx, filter, _options)
+}
+
+func (c *Collection) Aggregate(ctx context.Context, filter any, opts ...*options.AggregateOptions) (*mongo.Cursor, error) {
+	_options := options.Aggregate().SetAllowDiskUse(true).SetMaxTime(time.Hour)
+	switch len(opts) {
+	case 0:
+	default:
+		_options = opts[0].SetAllowDiskUse(true).SetMaxTime(time.Hour)
+	}
+
+	return c.Collection.Aggregate(ctx, filter, _options)
 }
