@@ -18,7 +18,7 @@ type Server[I Injector] struct {
 	defaultErrorCodes map[int]string
 	config            M
 	router            Router
-	logger            *log.Logger
+	logger            logger
 	rootPath          string
 	parent            *Server[I]
 	injector          func(*BasicInjector) I
@@ -46,9 +46,13 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config = M{}
 	}
 
-	log.Default().SetFlags(log.LstdFlags | log.Lshortfile)
+	var _logger logger
+	if loggerOut, exist := config["logger_out"]; exist {
+		_logger = logger{log.New(loggerOut.(io.Writer), "", log.LstdFlags|log.Lshortfile)}
+	}
+
 	s := &Server[I]{
-		logger:            log.Default(),
+		logger:            _logger,
 		config:            config,
 		parent:            nil,
 		rootPath:          "",
@@ -58,10 +62,6 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		mongoClients:      mongo.Clients{},
 		groups:            map[string]*Server[I]{},
 		jsonHandler:       DefaultJsonHandler{},
-	}
-
-	if loggerOut, exist := s.LookupConfig("logger_out"); exist {
-		s.logger = log.New(loggerOut.(io.Writer), "", log.LstdFlags|log.Lshortfile)
 	}
 
 	s.middleware = newMiddleware(s)
@@ -113,10 +113,6 @@ func (s *Server[_]) RootPath() string {
 	return s.rootPath
 }
 
-func (s *Server[_]) Logger() *log.Logger {
-	return s.logger
-}
-
 func (s *Server[I]) SetDefaultMongoClient(connectionUrl string) {
 	if err := s.mongoClients.AddClient("", connectionUrl); err != nil {
 		panic("could not connect to mongo client: " + err.Error())
@@ -141,16 +137,9 @@ func (s *Server[I]) Group(path string) *Server[I] {
 	if g, exists := s.groups[path]; exists {
 		return g
 	} else {
-		var loggerOut io.Writer
-		if logger, exist := s.LookupConfig("logger_out"); exist {
-			loggerOut = logger.(io.Writer)
-		} else {
-			loggerOut = os.Stderr
-		}
-
 		g = &Server[I]{
 			rootPath:          s.rootPath + path,
-			logger:            log.New(loggerOut, s.rootPath+path+" ", log.LstdFlags|log.Lshortfile),
+			logger:            s.logger,
 			parent:            s,
 			router:            s.router,
 			defaultErrorCodes: CopyMap(s.defaultErrorCodes),
@@ -289,6 +278,71 @@ func (s *Server[I]) FileServer(path, root string) {
 		fs.ServeHTTP(i.response(), i.request())
 		return Result{terminate: true}
 	}, NoBody{})
+}
+
+func (s *Server[_]) LogPrintln(v ...any) *Server[_] {
+	s.logger.Println(append([]any{"path={" + s.rootPath + "}"}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogPrint(v ...any) *Server[_] {
+	s.logger.Print(append([]any{"path={" + s.rootPath + "} "}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogPrintf(format string, v ...any) *Server[_] {
+	s.logger.Printf("path={"+s.rootPath+"} "+format, v...)
+	return s
+}
+
+func (s *Server[_]) LogTrace(v ...any) *Server[_] {
+	s.logger.Println(append([]any{"[TRACE] path={" + s.rootPath + "}"}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogDebug(v ...any) *Server[_] {
+	s.logger.Println(append([]any{"[DEBUG] path={" + s.rootPath + "}"}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogInfo(v ...any) *Server[_] {
+	s.logger.Println(append([]any{"[INFO] path={" + s.rootPath + "}"}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogWarn(v ...any) *Server[_] {
+	s.logger.Println(append([]any{"[WARN] path={" + s.rootPath + "}"}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogError(v ...any) *Server[_] {
+	s.logger.Println(append([]any{"[ERROR] path={" + s.rootPath + "}"}, v...)...)
+	return s
+}
+
+func (s *Server[_]) LogTracef(format string, v ...any) *Server[_] {
+	s.logger.Printf("[TRACE] path={"+s.rootPath+"} "+format, v...)
+	return s
+}
+
+func (s *Server[_]) LogDebugf(format string, v ...any) *Server[_] {
+	s.logger.Printf("[DEBUG] path={"+s.rootPath+"} "+format, v...)
+	return s
+}
+
+func (s *Server[_]) LogInfof(format string, v ...any) *Server[_] {
+	s.logger.Printf("[INFO] path={"+s.rootPath+"} "+format, v...)
+	return s
+}
+
+func (s *Server[_]) LogWarnf(format string, v ...any) *Server[_] {
+	s.logger.Printf("[WARN] path={"+s.rootPath+"} "+format, v...)
+	return s
+}
+
+func (s *Server[_]) LogErrorf(format string, v ...any) *Server[_] {
+	s.logger.Printf("[ERROR] path={"+s.rootPath+"} "+format, v...)
+	return s
 }
 
 func getDefaultErrorCodes() Map[int, string] {

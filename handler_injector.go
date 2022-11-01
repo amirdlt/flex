@@ -5,7 +5,6 @@ import (
 	"fmt"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -55,6 +54,19 @@ type Injector interface {
 	FormFile(key string) (multipart.File, *multipart.FileHeader, error)
 	RawPath() string
 	Path() string
+	LogPrintln(v ...any) *BasicInjector
+	LogPrint(v ...any) *BasicInjector
+	LogPrintf(format string, v ...any) *BasicInjector
+	LogDebug(v ...any) *BasicInjector
+	LogTrace(v ...any) *BasicInjector
+	LogInfo(v ...any) *BasicInjector
+	LogWarn(v ...any) *BasicInjector
+	LogError(v ...any) *BasicInjector
+	LogTracef(format string, v ...any) *BasicInjector
+	LogDebugf(format string, v ...any) *BasicInjector
+	LogInfof(format string, v ...any) *BasicInjector
+	LogWarnf(format string, v ...any) *BasicInjector
+	LogErrorf(format string, v ...any) *BasicInjector
 	request() *http.Request
 	response() http.ResponseWriter
 }
@@ -67,7 +79,7 @@ type BasicInjector struct {
 	extInjections     Map[string, any]
 	defaultErrorCodes Map[int, string]
 	rawPath           string
-	logger            *log.Logger
+	logger            logger
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
@@ -256,7 +268,7 @@ func (s *BasicInjector) LogPrintln(v ...any) *BasicInjector {
 }
 
 func (s *BasicInjector) LogPrint(v ...any) *BasicInjector {
-	s.logger.Print(append([]any{"path=" + s.Path()}, v...)...)
+	s.logger.Print(append([]any{"path=" + s.Path() + " "}, v...)...)
 	return s
 }
 
