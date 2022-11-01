@@ -46,13 +46,13 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config = M{}
 	}
 
-	var _logger logger
+	logger := logger{log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)}
 	if loggerOut, exist := config["logger_out"]; exist {
-		_logger = logger{log.New(loggerOut.(io.Writer), "", log.LstdFlags|log.Lshortfile)}
+		logger.SetOutput(loggerOut.(io.Writer))
 	}
 
 	s := &Server[I]{
-		logger:            _logger,
+		logger:            logger,
 		config:            config,
 		parent:            nil,
 		rootPath:          "",
@@ -280,68 +280,68 @@ func (s *Server[I]) FileServer(path, root string) {
 	}, NoBody{})
 }
 
-func (s *Server[_]) LogPrintln(v ...any) *Server[_] {
-	s.logger.Println(append([]any{"path={" + s.rootPath + "}"}, v...)...)
+func (s *Server[I]) LogPrintln(v ...any) *Server[I] {
+	s.logger.println(append([]any{"path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogPrint(v ...any) *Server[_] {
-	s.logger.Print(append([]any{"path={" + s.rootPath + "} "}, v...)...)
+func (s *Server[I]) LogPrint(v ...any) *Server[I] {
+	s.logger.print(append([]any{"path={" + s.rootPath + "} "}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogPrintf(format string, v ...any) *Server[_] {
-	s.logger.Printf("path={"+s.rootPath+"} "+format, v...)
+func (s *Server[I]) LogPrintf(format string, v ...any) *Server[I] {
+	s.logger.printf("path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
-func (s *Server[_]) LogTrace(v ...any) *Server[_] {
-	s.logger.Println(append([]any{"[TRACE] path={" + s.rootPath + "}"}, v...)...)
+func (s *Server[I]) LogTrace(v ...any) *Server[I] {
+	s.logger.println(append([]any{"[TRACE] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogDebug(v ...any) *Server[_] {
-	s.logger.Println(append([]any{"[DEBUG] path={" + s.rootPath + "}"}, v...)...)
+func (s *Server[I]) LogDebug(v ...any) *Server[I] {
+	s.logger.println(append([]any{"[DEBUG] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogInfo(v ...any) *Server[_] {
-	s.logger.Println(append([]any{"[INFO] path={" + s.rootPath + "}"}, v...)...)
+func (s *Server[I]) LogInfo(v ...any) *Server[I] {
+	s.logger.println(append([]any{"[INFO] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogWarn(v ...any) *Server[_] {
-	s.logger.Println(append([]any{"[WARN] path={" + s.rootPath + "}"}, v...)...)
+func (s *Server[I]) LogWarn(v ...any) *Server[I] {
+	s.logger.println(append([]any{"[WARN] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogError(v ...any) *Server[_] {
-	s.logger.Println(append([]any{"[ERROR] path={" + s.rootPath + "}"}, v...)...)
+func (s *Server[I]) LogError(v ...any) *Server[I] {
+	s.logger.println(append([]any{"[ERROR] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
-func (s *Server[_]) LogTracef(format string, v ...any) *Server[_] {
-	s.logger.Printf("[TRACE] path={"+s.rootPath+"} "+format, v...)
+func (s *Server[I]) LogTracef(format string, v ...any) *Server[I] {
+	s.logger.printf("[TRACE] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
-func (s *Server[_]) LogDebugf(format string, v ...any) *Server[_] {
-	s.logger.Printf("[DEBUG] path={"+s.rootPath+"} "+format, v...)
+func (s *Server[I]) LogDebugf(format string, v ...any) *Server[I] {
+	s.logger.printf("[DEBUG] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
-func (s *Server[_]) LogInfof(format string, v ...any) *Server[_] {
-	s.logger.Printf("[INFO] path={"+s.rootPath+"} "+format, v...)
+func (s *Server[I]) LogInfof(format string, v ...any) *Server[I] {
+	s.logger.printf("[INFO] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
-func (s *Server[_]) LogWarnf(format string, v ...any) *Server[_] {
-	s.logger.Printf("[WARN] path={"+s.rootPath+"} "+format, v...)
+func (s *Server[I]) LogWarnf(format string, v ...any) *Server[I] {
+	s.logger.printf("[WARN] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
-func (s *Server[_]) LogErrorf(format string, v ...any) *Server[_] {
-	s.logger.Printf("[ERROR] path={"+s.rootPath+"} "+format, v...)
+func (s *Server[I]) LogErrorf(format string, v ...any) *Server[I] {
+	s.logger.printf("[ERROR] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 

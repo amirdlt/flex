@@ -91,6 +91,11 @@ func simpleServer() {
 		return i.WrapOk(user)
 	}, NoBody{})
 
+	s.GET("/a", func(i *in) Result {
+		i.LogPrintln("hi")
+		return i.WrapNoContent()
+	})
+
 	s.Router().Handler(http.MethodGet, "/docs", http.FileServer(http.Dir("./docs")))
 
 	_ = s.Run(":9999")

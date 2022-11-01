@@ -263,67 +263,67 @@ func (s *BasicInjector) RawPath() string {
 }
 
 func (s *BasicInjector) LogPrintln(v ...any) *BasicInjector {
-	s.logger.Println(append([]any{"path=" + s.Path()}, v...)...)
+	s.logger.println(append([]any{"path=" + s.Path()}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogPrint(v ...any) *BasicInjector {
-	s.logger.Print(append([]any{"path=" + s.Path() + " "}, v...)...)
+	s.logger.print(append([]any{"path=" + s.Path() + " "}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogPrintf(format string, v ...any) *BasicInjector {
-	s.logger.Printf("path="+s.Path()+" "+format, v...)
+	s.logger.printf("path="+s.Path()+" "+format, v...)
 	return s
 }
 
 func (s *BasicInjector) LogTrace(v ...any) *BasicInjector {
-	s.logger.Println(append([]any{"[TRACE] path=" + s.Path()}, v...)...)
+	s.logger.println(append([]any{"[TRACE] path=" + s.Path()}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogDebug(v ...any) *BasicInjector {
-	s.logger.Println(append([]any{"[DEBUG] path=" + s.Path()}, v...)...)
+	s.logger.println(append([]any{"[DEBUG] path=" + s.Path()}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogInfo(v ...any) *BasicInjector {
-	s.logger.Println(append([]any{"[INFO] path=" + s.Path()}, v...)...)
+	s.logger.println(append([]any{"[INFO] path=" + s.Path()}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogWarn(v ...any) *BasicInjector {
-	s.logger.Println(append([]any{"[WARN] path=" + s.Path()}, v...)...)
+	s.logger.println(append([]any{"[WARN] path=" + s.Path()}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogError(v ...any) *BasicInjector {
-	s.logger.Println(append([]any{"[ERROR] path=" + s.Path()}, v...)...)
+	s.logger.println(append([]any{"[ERROR] path=" + s.Path()}, v...)...)
 	return s
 }
 
 func (s *BasicInjector) LogTracef(format string, v ...any) *BasicInjector {
-	s.logger.Printf("[TRACE] path="+s.Path()+" "+format, v...)
+	s.logger.printf("[TRACE] path="+s.Path()+" "+format, v...)
 	return s
 }
 
 func (s *BasicInjector) LogDebugf(format string, v ...any) *BasicInjector {
-	s.logger.Printf("[DEBUG] path="+s.Path()+" "+format, v...)
+	s.logger.printf("[DEBUG] path="+s.Path()+" "+format, v...)
 	return s
 }
 
 func (s *BasicInjector) LogInfof(format string, v ...any) *BasicInjector {
-	s.logger.Printf("[INFO] path="+s.Path()+" "+format, v...)
+	s.logger.printf("[INFO] path="+s.Path()+" "+format, v...)
 	return s
 }
 
 func (s *BasicInjector) LogWarnf(format string, v ...any) *BasicInjector {
-	s.logger.Printf("[WARN] path="+s.Path()+" "+format, v...)
+	s.logger.printf("[WARN] path="+s.Path()+" "+format, v...)
 	return s
 }
 
 func (s *BasicInjector) LogErrorf(format string, v ...any) *BasicInjector {
-	s.logger.Printf("[ERROR] path="+s.Path()+" "+format, v...)
+	s.logger.printf("[ERROR] path="+s.Path()+" "+format, v...)
 	return s
 }
 
