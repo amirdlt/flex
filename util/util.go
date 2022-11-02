@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"fmt"
+	"io"
+	"os"
 	"reflect"
 )
 
@@ -41,4 +43,13 @@ func Sha256(value string) string {
 
 func Md5(value string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(value)))
+}
+
+func GetFileOutputStream(path string) (io.ReadWriteCloser, error) {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_RDONLY|os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		panic(err)
+	}
+
+	return f, nil
 }

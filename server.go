@@ -5,7 +5,6 @@ import (
 	"github.com/amirdlt/flex/db/mongo"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -48,7 +47,11 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 
 	logger := logger{log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)}
 	if loggerOut, exist := config["logger_out"]; exist {
-		logger.SetOutput(loggerOut.(io.Writer))
+		if f, err := GetFileOutputStream(loggerOut.(string)); err != nil {
+			panic(err)
+		} else {
+			logger.SetOutput(f)
+		}
 	}
 
 	s := &Server[I]{
