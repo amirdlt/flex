@@ -8,6 +8,24 @@ import (
 
 type M = map[string]any
 
+type MapInterface[K comparable, V any] interface {
+	Len() int
+	Keys() Stream[K]
+	Values() Stream[V]
+	Items() Stream[Item[K, V]]
+	IsEmpty() bool
+	ContainKey(key K) bool
+	ContainValue(value V) bool
+	Put(key K, value V)
+	PutAll(_m Map[K, V])
+	Remove(key K)
+	RemoveAll(keys ...K)
+	PutItem(item Item[K, V])
+	Copy() Map[K, V]
+	RemoveEmptyValues()
+	ForEach(iterator func(k K, v V))
+}
+
 type Map[K comparable, V any] map[K]V
 
 type Item[K comparable, V any] struct {
@@ -151,13 +169,125 @@ func CopyMap[K comparable, V any](m map[K]V) map[K]V {
 }
 
 type SynchronizedMap[K comparable, V any] struct {
-	Map[K, V]
+	m Map[K, V]
 	*sync.RWMutex
 }
 
 func NewSynchronizedMap[K comparable, V any](_ K, _ V) SynchronizedMap[K, V] {
 	return SynchronizedMap[K, V]{
-		Map:     Map[K, V]{},
+		m:       Map[K, V]{},
 		RWMutex: &sync.RWMutex{},
 	}
+}
+
+func (m SynchronizedMap[K, V]) Len() int {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.Len()
+}
+
+func (m SynchronizedMap[K, V]) Keys() Stream[K] {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.Keys()
+}
+
+func (m SynchronizedMap[K, V]) Values() Stream[V] {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.Values()
+}
+
+func (m SynchronizedMap[K, V]) Items() Stream[Item[K, V]] {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.Items()
+}
+
+func (m SynchronizedMap[K, V]) IsEmpty() bool {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.IsEmpty()
+}
+
+func (m SynchronizedMap[K, V]) ContainKey(key K) bool {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.ContainKey(key)
+}
+
+func (m SynchronizedMap[K, V]) ContainValue(value V) bool {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.ContainValue(value)
+}
+
+func (m SynchronizedMap[K, V]) Put(key K, value V) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.Put(key, value)
+}
+
+func (m SynchronizedMap[K, V]) PutAll(_m map[K]V) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.PutAll(_m)
+}
+
+func (m SynchronizedMap[K, V]) Remove(key K) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.Remove(key)
+}
+
+func (m SynchronizedMap[K, V]) RemoveAll(keys ...K) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.RemoveAll(keys...)
+}
+
+func (m SynchronizedMap[K, V]) PutItem(item Item[K, V]) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.PutItem(item)
+}
+
+func (m SynchronizedMap[K, V]) Copy() Map[K, V] {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.Copy()
+}
+
+func (m SynchronizedMap[K, V]) RemoveEmptyValues() {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.RemoveEmptyValues()
+}
+
+func (m SynchronizedMap[K, V]) ForEach(iterator func(k K, v V)) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.m.ForEach(iterator)
+}
+
+func (m SynchronizedMap[K, V]) AsMap() Map[K, V] {
+	m.Lock()
+	defer m.Unlock()
+
+	return m.m.Copy()
 }
