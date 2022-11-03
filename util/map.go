@@ -291,3 +291,7 @@ func (m SynchronizedMap[K, V]) AsMap() Map[K, V] {
 
 	return m.m.Copy()
 }
+
+func (m SynchronizedMap[K, V]) UnsafeInnerMap() Map[K, V] {
+	return m.m
+}
