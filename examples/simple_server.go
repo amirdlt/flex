@@ -38,7 +38,9 @@ type history struct {
 }
 
 func simpleServer() {
-	s := New(M{}, func(i *BasicInjector) *in {
+	s := New(M{
+		"auto_reload": true,
+	}, func(i *BasicInjector) *in {
 		return &in{
 			BasicInjector: i,
 		}

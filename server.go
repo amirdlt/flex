@@ -1,10 +1,12 @@
 package flex
 
 import (
+	"context"
 	"fmt"
 	"github.com/amirdlt/flex/db/mongo"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -26,7 +28,8 @@ type Server[I Injector] struct {
 	jsonHandler       JsonHandler
 	middleware        *Middleware[I]
 	httpServer        *http.Server
-	startTime         *time.Time
+	startTime         time.Time
+	reload            AutoReload
 }
 
 type BasicServer = Server[*BasicInjector]
@@ -45,7 +48,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config = M{}
 	}
 
-	logger := logger{log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)}
+	logger := logger{log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile), os.Stderr}
 	if loggerOut, exist := config["logger_out"]; exist {
 		if f, err := GetFileOutputStream(loggerOut.(string)); err != nil {
 			panic(err)
@@ -66,6 +69,12 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		groups:            map[string]*Server[I]{},
 		jsonHandler:       DefaultJsonHandler{},
 	}
+
+	s.reload = NewAutoReload("", func() error {
+		return s.Run()
+	}, func() error {
+		return s.Shutdown(nil)
+	}, logger.out)
 
 	s.middleware = newMiddleware(s)
 
@@ -92,7 +101,7 @@ func Default() *Server[*BasicInjector] {
 }
 
 func (s *Server[_]) StartTime() time.Time {
-	return *s.startTime
+	return s.startTime
 }
 
 func (s *Server[_]) LookupConfig(key string) (any, bool) {
@@ -168,9 +177,9 @@ func (s *Server[_]) Run(addr ...string) error {
 		var address string
 		switch len(addr) {
 		case 0:
-			if addr, exist := os.LookupEnv("PORT"); exist {
-				if !strings.Contains(addr, ":") {
-					address = ":" + addr
+			if port, exist := os.LookupEnv("PORT"); exist {
+				if !strings.Contains(port, ":") {
+					address = ":" + port
 				}
 			} else {
 				address = ":8091"
@@ -187,10 +196,24 @@ func (s *Server[_]) Run(addr ...string) error {
 		s.httpServer.Addr = address
 	}
 
-	t := time.Now()
-	s.startTime = &t
+	if s.startTime.UnixMilli() > 0 {
+		return nil
+	}
 
-	s.logger.Println("server is listening on: " + s.httpServer.Addr)
+	s.startTime = time.Now()
+
+	return s.run()
+}
+
+func (s *Server[_]) run() (err error) {
+	s.LogTrace("server is listening on:", s.httpServer.Addr)
+	if val, exist := s.LookupConfig("auto_reload"); exist {
+		if val == "true" || val == true {
+			s.reload.Start()
+			select {}
+		}
+	}
+
 	return s.httpServer.ListenAndServe()
 }
 
@@ -346,6 +369,38 @@ func (s *Server[I]) LogWarnf(format string, v ...any) *Server[I] {
 func (s *Server[I]) LogErrorf(format string, v ...any) *Server[I] {
 	s.logger.printf("[ERROR] path={"+s.rootPath+"} "+format, v...)
 	return s
+}
+
+func (s *Server[I]) LoggerOutput() io.Writer {
+	return s.logger.out
+}
+
+func (s *Server[I]) SetLoggerOutput(w io.Writer) {
+	s.logger.SetOutput(w)
+}
+
+func (s *Server[I]) Shutdown(ctx context.Context) (err error) {
+	if s.httpServer == nil {
+		return nil
+	}
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	s.mongoClients.ClearAllClients()
+	s.startTime = time.Time{}
+
+	defer func() {
+		s.LogTrace("**********", "server shutdown, err=", err, "**********")
+	}()
+
+	err = s.httpServer.Shutdown(ctx)
+	return
+}
+
+func (s *Server[I]) IsListening() bool {
+	return s.startTime == time.Time{}
 }
 
 func getDefaultErrorCodes() Map[int, string] {
