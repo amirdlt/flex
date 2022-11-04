@@ -29,7 +29,6 @@ type Server[I Injector] struct {
 	middleware        *Middleware[I]
 	httpServer        *http.Server
 	startTime         time.Time
-	reload            AutoReload
 }
 
 type BasicServer = Server[*BasicInjector]
@@ -69,12 +68,6 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		groups:            map[string]*Server[I]{},
 		jsonHandler:       DefaultJsonHandler{},
 	}
-
-	s.reload = NewAutoReload("", func() error {
-		return s.Run()
-	}, func() error {
-		return s.Shutdown(nil)
-	}, logger.out)
 
 	s.middleware = newMiddleware(s)
 
@@ -196,24 +189,9 @@ func (s *Server[_]) Run(addr ...string) error {
 		s.httpServer.Addr = address
 	}
 
-	if s.startTime.UnixMilli() > 0 {
-		return nil
-	}
-
 	s.startTime = time.Now()
 
-	return s.run()
-}
-
-func (s *Server[_]) run() (err error) {
-	s.LogTrace("server is listening on:", s.httpServer.Addr)
-	if val, exist := s.LookupConfig("auto_reload"); exist {
-		if val == "true" || val == true {
-			s.reload.Start()
-			select {}
-		}
-	}
-
+	s.logger.Println("server is listening on:", s.httpServer.Addr)
 	return s.httpServer.ListenAndServe()
 }
 
