@@ -324,6 +324,11 @@ func (s *Server[I]) LogError(v ...any) *Server[I] {
 	return s
 }
 
+func (s *Server[I]) LogFatal(v ...any) {
+	s.logger.println(append([]any{"[FATAL] path={" + s.rootPath + "}"}, v...)...)
+	os.Exit(1)
+}
+
 func (s *Server[I]) LogTracef(format string, v ...any) *Server[I] {
 	s.logger.printf("[TRACE] path={"+s.rootPath+"} "+format, v...)
 	return s
@@ -347,6 +352,11 @@ func (s *Server[I]) LogWarnf(format string, v ...any) *Server[I] {
 func (s *Server[I]) LogErrorf(format string, v ...any) *Server[I] {
 	s.logger.printf("[ERROR] path={"+s.rootPath+"} "+format, v...)
 	return s
+}
+
+func (s *Server[I]) LogFatalf(format string, v ...any) {
+	s.logger.printf("[FATAL] path={"+s.rootPath+"} "+format, v...)
+	os.Exit(1)
 }
 
 func (s *Server[I]) LoggerOutput() io.Writer {
