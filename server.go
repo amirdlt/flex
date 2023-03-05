@@ -445,7 +445,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
         use-path-in-nav-bar = "true"
         show-components = "true"
         show-info = "true"
-        show-header = "true"
+        show-header = "false"
         allow-search = "false"
         allow-advanced-search = "true"
         allow-spec-url-load="false"
