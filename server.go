@@ -392,12 +392,12 @@ func (s *Server[I]) IsListening() bool {
 }
 
 func (s *Server[I]) ServeOpenAPI(path, indexFilePath, rawDocFilePath string) {
-	s.GET(path, func(i Injector) Result {
+	s.GET(path, func(i I) Result {
 		i.SetContentType("text/html")
 		return i.ServeStaticFile(indexFilePath, http.StatusOK)
 	})
 
-	s.GET(path+"/raw", func(i Injector) Result {
+	s.GET(path+"/raw", func(i I) Result {
 		contentType := "text/yaml"
 		if strings.HasSuffix(rawDocFilePath, ".json") {
 			contentType = "application/json"
@@ -409,7 +409,7 @@ func (s *Server[I]) ServeOpenAPI(path, indexFilePath, rawDocFilePath string) {
 }
 
 func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
-	s.GET(path, func(i Injector) Result {
+	s.GET(path, func(i I) Result {
 		i.SetContentType("text/html")
 		return i.WrapOk([]byte(`<!DOCTYPE html>
 <html lang="en">
@@ -461,7 +461,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 `), http.StatusOK)
 	})
 
-	s.GET(path+"/raw", func(i Injector) Result {
+	s.GET(path+"/raw", func(i I) Result {
 		contentType := "text/yaml"
 		if strings.HasSuffix(rawDocFilePath, ".json") {
 			contentType = "application/json"
