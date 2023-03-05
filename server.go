@@ -391,6 +391,87 @@ func (s *Server[I]) IsListening() bool {
 	return s.startTime == time.Time{}
 }
 
+func (s *Server[I]) ServeOpenAPI(path, indexFilePath, rawDocFilePath string) {
+	s.GET(path, func(i Injector) Result {
+		i.SetContentType("text/html")
+		return i.ServeStaticFile(indexFilePath, http.StatusOK)
+	})
+
+	s.GET("/api-doc/raw", func(i Injector) Result {
+		contentType := "text/yaml"
+		if strings.HasSuffix(rawDocFilePath, ".json") {
+			contentType = "application/json"
+		}
+
+		i.SetContentType(contentType)
+		return i.ServeStaticFile("./doc/doc.yaml", http.StatusOK)
+	})
+}
+
+func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
+	s.GET(path, func(i Injector) Result {
+		i.SetContentType("text/html")
+		return i.WrapOk([]byte(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Radar API Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"
+            rel="stylesheet"
+    />
+    <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,200;1,300;1,400;1,500;1,600;1,700;1,800&display=swap"
+            rel="stylesheet"
+    />
+    <script
+            type="module"
+            src="https://cdn.jsdelivr.net/npm/rapidoc@9.2.0/dist/rapidoc-min.js"
+            integrity="sha256-zKHbtf55GvlWwNiTYfoDmiXInEyFLp08JnhU8Gmv49k="
+            crossorigin="anonymous"
+    ></script>
+</head>
+<body>
+<rapi-doc
+        spec-url="`+rawDocFilePath+`"
+        id="thedoc"
+        theme = "dark"
+        render-style="view"
+        schema-style="table"
+        show-method-in-nav-bar = "true"
+        use-path-in-nav-bar = "true"
+        show-components = "true"
+        show-info = "true"
+        show-header = "true"
+        allow-search = "false"
+        allow-advanced-search = "true"
+        allow-spec-url-load="false"
+        allow-spec-file-download="true"
+        allow-server-selection = "true"
+        allow-authentication	= "true"
+        update-route="false"
+        match-type="regex"
+        persist-auth="true"
+></rapi-doc>
+</body>
+</html>
+`), http.StatusOK)
+	})
+
+	s.GET("/api-doc/raw", func(i Injector) Result {
+		contentType := "text/yaml"
+		if strings.HasSuffix(rawDocFilePath, ".json") {
+			contentType = "application/json"
+		}
+
+		i.SetContentType(contentType)
+		return i.ServeStaticFile("./doc/doc.yaml", http.StatusOK)
+	})
+}
+
 func getDefaultErrorCodes() Map[int, string] {
 	return map[int]string{
 		http.StatusBadRequest:          "ERR_BAD_REQUEST",
