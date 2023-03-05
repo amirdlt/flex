@@ -436,7 +436,8 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 </head>
 <body>
 <rapi-doc
-        spec-url="`+rawDocFilePath+`"
+        spec-url="`+path+`/raw"
+		show-header="false"
         id="thedoc"
         theme = "dark"
         render-style="view"
@@ -449,7 +450,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
         allow-search = "false"
         allow-advanced-search = "true"
         allow-spec-url-load="false"
-        allow-spec-file-download="true"
+        allow-spec-file-download="false"
         allow-server-selection = "true"
         allow-authentication	= "true"
         update-route="false"
