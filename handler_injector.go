@@ -70,7 +70,7 @@ type Injector interface {
 	LogErrorf(format string, v ...any) *BasicInjector
 	request() *http.Request
 	response() http.ResponseWriter
-	ServeStaticFile(filePath string, statusCode int)
+	ServeStaticFile(filePath string, statusCode int) Result
 }
 
 type BasicInjector struct {
