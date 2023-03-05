@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 type NoBody struct{}
@@ -69,6 +70,7 @@ type Injector interface {
 	LogErrorf(format string, v ...any) *BasicInjector
 	request() *http.Request
 	response() http.ResponseWriter
+	ServeStaticFile(filePath string)
 }
 
 type BasicInjector struct {
@@ -333,4 +335,13 @@ func (s *BasicInjector) response() http.ResponseWriter {
 
 func (s *BasicInjector) request() *http.Request {
 	return s.r
+}
+
+func (s *BasicInjector) ServeStaticFile(filePath string, statusCode int) Result {
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return s.WrapInternalErr("while serving static file, err=" + err.Error())
+	}
+
+	return s.Wrap(file, statusCode)
 }

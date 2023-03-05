@@ -1,6 +1,7 @@
 package main
 
 func main() {
-	simpleServer()
+	staticFileServe()
+	//simpleServer()
 	//simpleDefaultServer()
 }
