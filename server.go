@@ -483,5 +483,6 @@ func getDefaultErrorCodes() Map[int, string] {
 		http.StatusConflict:            "ERR_CONFLICT",
 		http.StatusForbidden:           "ERR_FORBIDDEN",
 		http.StatusNotImplemented:      "ERR_NOT_IMPLEMENTED",
+		http.StatusNotAcceptable:       "ERR_NOT_NOT_ACCEPTABLE",
 	}
 }

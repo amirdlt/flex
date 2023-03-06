@@ -187,6 +187,10 @@ func (s *BasicInjector) WrapBadRequestErr(_error string, extValues ...any) Resul
 	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusBadRequest], http.StatusBadRequest, extValues...)
 }
 
+func (s *BasicInjector) WrapStatusNotAcceptable(_error string, extValues ...any) Result {
+	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusNotAcceptable], http.StatusNotAcceptable, extValues...)
+}
+
 func (s *BasicInjector) WrapTooManyRequestsErr(_error string, extValues ...any) Result {
 	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusTooManyRequests], http.StatusTooManyRequests, extValues...)
 }
