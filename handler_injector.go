@@ -345,3 +345,7 @@ func (s *BasicInjector) ServeStaticFile(filePath string, statusCode int) Result 
 
 	return s.Wrap(file, statusCode)
 }
+
+func (s *BasicInjector) RequestHeader(key string) string {
+	return s.RequestHeaders().Get(key)
+}
