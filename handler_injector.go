@@ -349,3 +349,19 @@ func (s *BasicInjector) ServeStaticFile(filePath string, statusCode int) Result 
 func (s *BasicInjector) RequestHeader(key string) string {
 	return s.RequestHeaders().Get(key)
 }
+
+func (s *BasicInjector) HasRequestHeader(key string) bool {
+	return s.RequestHeaders().Get(key) != ""
+}
+
+func (s *BasicInjector) LookupRequestHeader(key string) (string, bool) {
+	return s.RequestHeader(key), s.HasRequestHeader(key)
+}
+
+func (s *BasicInjector) EqualIfExistRequestHeader(key, expected string) bool {
+	if !s.HasRequestHeader(key) {
+		return true
+	}
+
+	return s.RequestHeader(key) == expected
+}
