@@ -9,12 +9,12 @@ type Result struct {
 	terminate    bool
 }
 
-func (h Result) GetExtValue() any {
-	if h.extValue == nil {
+func (r Result) GetExtValue() any {
+	if r.extValue == nil {
 		return nil
 	}
 
-	val := reflect.ValueOf(h.extValue)
+	val := reflect.ValueOf(r.extValue)
 	switch val.Kind() {
 	case reflect.Array, reflect.Slice:
 		if val.Len() == 1 {
@@ -22,5 +22,9 @@ func (h Result) GetExtValue() any {
 		}
 	}
 
-	return h.extValue
+	return r.extValue
+}
+
+func (r Result) IsSuccessful() bool {
+	return r.statusCode < 300 && r.statusCode >= 200
 }
