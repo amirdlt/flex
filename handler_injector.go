@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 type NoBody struct{}
@@ -368,4 +369,12 @@ func (s *BasicInjector) EqualIfExistRequestHeader(key, expected string) bool {
 	}
 
 	return s.RequestHeader(key) == expected
+}
+
+func (s *BasicInjector) ContainsIfExistRequestHeader(key, value string) bool {
+	if !s.HasRequestHeader(key) {
+		return true
+	}
+
+	return strings.Contains(s.RequestHeader(key), value)
 }
