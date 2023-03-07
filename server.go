@@ -395,7 +395,7 @@ func (s *Server[I]) ServeOpenAPI(path, indexFilePath, rawDocFilePath string) {
 	s.GET(path, func(i I) Result {
 		i.SetContentType("text/html")
 		return i.ServeStaticFile(indexFilePath, http.StatusOK)
-	})
+	}, noBody)
 
 	s.GET(path+"/raw", func(i I) Result {
 		contentType := "text/yaml"
@@ -405,7 +405,7 @@ func (s *Server[I]) ServeOpenAPI(path, indexFilePath, rawDocFilePath string) {
 
 		i.SetContentType(contentType)
 		return i.ServeStaticFile(rawDocFilePath, http.StatusOK)
-	})
+	}, noBody)
 }
 
 func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
@@ -460,7 +460,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 </body>
 </html>
 `), http.StatusOK)
-	})
+	}, noBody)
 
 	s.GET(path+"/raw", func(i I) Result {
 		contentType := "text/yaml"
@@ -470,7 +470,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 
 		i.SetContentType(contentType)
 		return i.ServeStaticFile(rawDocFilePath, http.StatusOK)
-	})
+	}, noBody)
 }
 
 func getDefaultErrorCodes() Map[int, string] {
