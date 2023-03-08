@@ -6,6 +6,7 @@ import (
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,7 +54,7 @@ type Injector interface {
 	ParseMultipartForm(maxMemory int64) error
 	FormValue(key string) string
 	PostFormValue(key string) string
-	FormFile(key string) (multipart.File, *multipart.FileHeader, error)
+	FormFile(name string) (*multipart.FileHeader, error)
 	RawPath() string
 	Path() string
 	LogPrintln(v ...any) *BasicInjector
@@ -72,6 +73,17 @@ type Injector interface {
 	request() *http.Request
 	response() http.ResponseWriter
 	ServeStaticFile(filePath string, statusCode int) Result
+	RequestHeader(key string) string
+	HasRequestHeader(key string) bool
+	LookupRequestHeader(key string) (string, bool)
+	EqualIfExistRequestHeader(key, expected string) bool
+	ContainsIfExistRequestHeader(key, value string) bool
+	RealIp() string
+	FormParams() (url.Values, error)
+	MultipartForm() (*multipart.Form, error)
+	Cookie(name string) (*http.Cookie, error)
+	SetCookie(cookie *http.Cookie)
+	Cookies() []*http.Cookie
 }
 
 type BasicInjector struct {
@@ -257,10 +269,6 @@ func (s *BasicInjector) PostFormValue(key string) string {
 	return s.r.PostFormValue(key)
 }
 
-func (s *BasicInjector) FormFile(key string) (multipart.File, *multipart.FileHeader, error) {
-	return s.r.FormFile(key)
-}
-
 func (s *BasicInjector) Path() string {
 	return s.r.RequestURI
 }
@@ -377,4 +385,70 @@ func (s *BasicInjector) ContainsIfExistRequestHeader(key, value string) bool {
 	}
 
 	return strings.Contains(s.RequestHeader(key), value)
+}
+
+func (s *BasicInjector) RealIp() string {
+	if ip := s.r.Header.Get("X-Forwarded-For"); ip != "" {
+		i := strings.IndexAny(ip, ",")
+		if i > 0 {
+			xffip := strings.TrimSpace(ip[:i])
+			xffip = strings.TrimPrefix(xffip, "[")
+			xffip = strings.TrimSuffix(xffip, "]")
+			return xffip
+		}
+
+		return ip
+	}
+
+	if ip := s.r.Header.Get("X-Real-Ip"); ip != "" {
+		ip = strings.TrimPrefix(ip, "[")
+		ip = strings.TrimSuffix(ip, "]")
+
+		return ip
+	}
+
+	ra, _, _ := net.SplitHostPort(s.r.RemoteAddr)
+
+	return ra
+}
+
+func (s *BasicInjector) FormParams() (url.Values, error) {
+	if strings.HasPrefix(s.r.Header.Get("Content-Type"), "multipart/form-data") {
+		if err := s.r.ParseMultipartForm(32 << 20); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := s.r.ParseForm(); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.r.Form, nil
+}
+
+func (s *BasicInjector) FormFile(name string) (*multipart.FileHeader, error) {
+	f, fh, err := s.r.FormFile(name)
+	if err != nil {
+		return nil, err
+	}
+	_ = f.Close()
+	return fh, nil
+}
+
+func (s *BasicInjector) MultipartForm() (*multipart.Form, error) {
+	err := s.r.ParseMultipartForm(32 << 20)
+
+	return s.r.MultipartForm, err
+}
+
+func (s *BasicInjector) Cookie(name string) (*http.Cookie, error) {
+	return s.r.Cookie(name)
+}
+
+func (s *BasicInjector) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(s.w, cookie)
+}
+
+func (s *BasicInjector) Cookies() []*http.Cookie {
+	return s.r.Cookies()
 }
