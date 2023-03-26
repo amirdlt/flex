@@ -1,7 +1,8 @@
 package flex
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
+	json "github.com/json-iterator/go"
 	"io"
 )
 
@@ -9,8 +10,8 @@ type JsonHandler interface {
 	Marshal(any) ([]byte, error)
 	Unmarshal([]byte, any) error
 	MarshalIndent(any, string, string) ([]byte, error)
-	NewDecoder(io.Reader) *json.Decoder
-	NewEncoder(io.Writer) *json.Encoder
+	NewDecoder(io.Reader) *stdjson.Decoder
+	NewEncoder(io.Writer) *stdjson.Encoder
 	Validate([]byte) bool
 }
 
