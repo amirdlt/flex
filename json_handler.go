@@ -2,7 +2,7 @@ package flex
 
 import (
 	stdjson "encoding/json"
-	json "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"io"
 )
 
