@@ -1,7 +1,6 @@
 package flex
 
 import (
-	stdjson "encoding/json"
 	"github.com/goccy/go-json"
 	"io"
 )
@@ -10,9 +9,22 @@ type JsonHandler interface {
 	Marshal(any) ([]byte, error)
 	Unmarshal([]byte, any) error
 	MarshalIndent(any, string, string) ([]byte, error)
-	NewDecoder(io.Reader) *stdjson.Decoder
-	NewEncoder(io.Writer) *stdjson.Encoder
+	NewDecoder(io.Reader) JsonDecoder
+	NewEncoder(io.Writer) JsonEncoder
 	Validate([]byte) bool
+}
+
+type JsonDecoder interface {
+	UseNumber()
+	DisallowUnknownFields()
+	Decode(v any) error
+	Buffered() io.Reader
+}
+
+type JsonEncoder interface {
+	Encode(v any) error
+	SetIndent(prefix, indent string)
+	SetEscapeHTML(on bool)
 }
 
 type DefaultJsonHandler struct{}
@@ -29,11 +41,11 @@ func (DefaultJsonHandler) MarshalIndent(v any, prefix, indent string) ([]byte, e
 	return json.MarshalIndent(v, prefix, indent)
 }
 
-func (DefaultJsonHandler) NewDecoder(reader io.Reader) *json.Decoder {
+func (DefaultJsonHandler) NewDecoder(reader io.Reader) JsonDecoder {
 	return json.NewDecoder(reader)
 }
 
-func (DefaultJsonHandler) NewEncoder(writer io.Writer) *json.Encoder {
+func (DefaultJsonHandler) NewEncoder(writer io.Writer) JsonEncoder {
 	return json.NewEncoder(writer)
 }
 
