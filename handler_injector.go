@@ -452,3 +452,7 @@ func (s *BasicInjector) SetCookie(cookie *http.Cookie) {
 func (s *BasicInjector) Cookies() []*http.Cookie {
 	return s.r.Cookies()
 }
+
+func (s *BasicInjector) LookupQueryParam(key string) bool {
+	return s.Query(key) != ""
+}
