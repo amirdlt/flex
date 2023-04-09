@@ -29,12 +29,21 @@ func (r Router) HandleSpecialFixedPath(method, path string, handle httprouter.Ha
 }
 
 func (r Router) Lookup(method, path string) (httprouter.Handle, httprouter.Params, bool) {
-	fixedPath := strings.ToLower(strings.Trim(path, " /\\\n\t"))
-	if h, exist := r.specialFixedRoutes[fixedPath]; exist {
+	if h := r.specialFixedPathLookup(method, path); h != nil {
 		return h, nil, true
 	}
 
 	return r.Router.Lookup(method, path)
+}
+
+func (r Router) specialFixedPathLookup(_, path string) httprouter.Handle {
+	if len(r.specialFixedRoutes) != 0 {
+		fixedPath := strings.ToLower(strings.Trim(path, " /\\\n\t"))
+
+		return r.specialFixedRoutes[fixedPath]
+	}
+
+	return nil
 }
 
 func (r Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
