@@ -30,7 +30,7 @@ func (r Router) HandleSpecialFixedPath(method, path string, handle httprouter.Ha
 
 func (r Router) Lookup(method, path string) (httprouter.Handle, httprouter.Params, bool) {
 	if h := r.specialFixedPathLookup(method, path); h != nil {
-		return h, nil, true
+		return h, httprouter.Params{}, true
 	}
 
 	return r.Router.Lookup(method, path)
@@ -47,8 +47,8 @@ func (r Router) specialFixedPathLookup(_, path string) httprouter.Handle {
 }
 
 func (r Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if handler, params, exist := r.Lookup(req.Method, req.URL.Path); exist {
-		handler(w, req, params)
+	if handler := r.specialFixedPathLookup(req.Method, req.URL.Path); handler != nil {
+		handler(w, req, httprouter.Params{})
 		return
 	}
 
