@@ -84,6 +84,8 @@ type Injector interface {
 	Cookie(name string) (*http.Cookie, error)
 	SetCookie(cookie *http.Cookie)
 	Cookies() []*http.Cookie
+	WrapStatusNotAcceptable(_error string, extValues ...any) Result
+	LookupQueryParam(key string) bool
 }
 
 type BasicInjector struct {

@@ -1,20 +1,37 @@
 package flex
 
 import (
-	"github.com/amirdlt/flex/util"
+	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"strings"
 )
 
 type Router struct {
-	apis map[string][]string
+	apis               map[string][]string
+	specialFixedRoutes Map[string, httprouter.Handle]
 	*httprouter.Router
 }
 
-func (r Router) Routes() util.Map[string, []string] {
-	return util.CopyMap(r.apis)
+func (r Router) Routes() Map[string, []string] {
+	return CopyMap(r.apis)
 }
 
 func (r Router) Handle(method, path string, handle httprouter.Handle) {
 	r.apis[method] = append(r.apis[method], path)
 	r.Router.Handle(method, path, handle)
+}
+
+func (r Router) HandleSpecialFixedPath(method, path string, handle httprouter.Handle) {
+	r.apis[method] = append(r.apis[method], path)
+	path = strings.ToLower(strings.Trim(path, " /\\\n\t"))
+	r.specialFixedRoutes[path] = handle
+}
+
+func (r Router) Lookup(method, path string) (httprouter.Handle, httprouter.Params, bool) {
+	fixedPath := strings.ToLower(strings.Trim(path, " /\\\n\t"))
+	if h, exist := r.specialFixedRoutes[fixedPath]; exist {
+		return h, nil, true
+	}
+
+	return r.Router.Lookup(method, path)
 }

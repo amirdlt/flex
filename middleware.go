@@ -73,7 +73,11 @@ func (m *Middleware[I]) mergeMiddleware(middleware *Middleware[I]) {
 	}
 }
 
-func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
+func (m *Middleware[I]) register(method, path string, bodyType reflect.Type, specialFixedPath ...bool) {
+	if len(specialFixedPath) == 0 {
+		specialFixedPath = []bool{false}
+	}
+
 	switch bodyType.Kind() {
 	case reflect.Pointer, reflect.UnsafePointer, reflect.Chan, reflect.Func, reflect.Interface, reflect.Uintptr, reflect.Invalid:
 		panic("inappropriate body type's kind: " + bodyType.String())
@@ -120,54 +124,107 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type) {
 		}
 	}
 
-	server.router.Handle(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-		baseI := BasicInjector{
-			defaultErrorCodes: server.defaultErrorCodes,
-			pathParameters:    params,
-			r:                 r,
-			w:                 w,
-			extInjections:     M{},
-			rawPath:           path,
-			logger:            server.logger,
-		}
+	if specialFixedPath[0] {
+		server.router.HandleSpecialFixedPath(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+			baseI := BasicInjector{
+				defaultErrorCodes: server.defaultErrorCodes,
+				pathParameters:    params,
+				r:                 r,
+				w:                 w,
+				extInjections:     M{},
+				rawPath:           path,
+				logger:            server.logger,
+			}
 
-		defer func() {
-			_ = r.Body.Close()
-		}()
+			defer func() {
+				_ = r.Body.Close()
+			}()
 
-		requestBodyPtr := reflect.New(bodyType)
-		val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
-		switch val.Kind() {
-		case reflect.Array, reflect.Slice:
-			if val.Type().Elem().Kind() == reflect.Uint8 {
+			requestBodyPtr := reflect.New(bodyType)
+			val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+			switch val.Kind() {
+			case reflect.Array, reflect.Slice:
+				if val.Type().Elem().Kind() == reflect.Uint8 {
+					if arr, err := io.ReadAll(r.Body); err != nil {
+						send(baseI, baseI.WrapBadRequestErr("could not read body"))
+						return
+					} else {
+						baseI.requestBody = arr
+					}
+				}
+			case reflect.String:
 				if arr, err := io.ReadAll(r.Body); err != nil {
 					send(baseI, baseI.WrapBadRequestErr("could not read body"))
 					return
 				} else {
-					baseI.requestBody = arr
+					baseI.requestBody = string(arr)
+				}
+			default:
+				if reflect.TypeOf(noBody) != bodyType {
+					if err := server.jsonHandler.NewDecoder(r.Body).Decode(requestBodyPtr.Interface()); err != nil {
+						send(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
+						return
+					} else {
+						baseI.requestBody = requestBodyPtr.Elem().Interface()
+					}
 				}
 			}
-		case reflect.String:
-			if arr, err := io.ReadAll(r.Body); err != nil {
-				send(baseI, baseI.WrapBadRequestErr("could not read body"))
-				return
-			} else {
-				baseI.requestBody = string(arr)
+
+			result := handler(server.injector(&baseI))
+			if !result.terminate {
+				send(baseI, result)
 			}
-		default:
-			if reflect.TypeOf(noBody) != bodyType {
-				if err := server.jsonHandler.NewDecoder(r.Body).Decode(requestBodyPtr.Interface()); err != nil {
-					send(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
+		})
+	} else {
+		server.router.Handle(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+			baseI := BasicInjector{
+				defaultErrorCodes: server.defaultErrorCodes,
+				pathParameters:    params,
+				r:                 r,
+				w:                 w,
+				extInjections:     M{},
+				rawPath:           path,
+				logger:            server.logger,
+			}
+
+			defer func() {
+				_ = r.Body.Close()
+			}()
+
+			requestBodyPtr := reflect.New(bodyType)
+			val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+			switch val.Kind() {
+			case reflect.Array, reflect.Slice:
+				if val.Type().Elem().Kind() == reflect.Uint8 {
+					if arr, err := io.ReadAll(r.Body); err != nil {
+						send(baseI, baseI.WrapBadRequestErr("could not read body"))
+						return
+					} else {
+						baseI.requestBody = arr
+					}
+				}
+			case reflect.String:
+				if arr, err := io.ReadAll(r.Body); err != nil {
+					send(baseI, baseI.WrapBadRequestErr("could not read body"))
 					return
 				} else {
-					baseI.requestBody = requestBodyPtr.Elem().Interface()
+					baseI.requestBody = string(arr)
+				}
+			default:
+				if reflect.TypeOf(noBody) != bodyType {
+					if err := server.jsonHandler.NewDecoder(r.Body).Decode(requestBodyPtr.Interface()); err != nil {
+						send(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
+						return
+					} else {
+						baseI.requestBody = requestBodyPtr.Elem().Interface()
+					}
 				}
 			}
-		}
 
-		result := handler(server.injector(&baseI))
-		if !result.terminate {
-			send(baseI, result)
-		}
-	})
+			result := handler(server.injector(&baseI))
+			if !result.terminate {
+				send(baseI, result)
+			}
+		})
+	}
 }

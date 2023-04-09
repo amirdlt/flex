@@ -61,7 +61,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config:            config,
 		parent:            nil,
 		rootPath:          "",
-		router:            Router{Router: httprouter.New(), apis: map[string][]string{}},
+		router:            Router{Router: httprouter.New(), apis: map[string][]string{}, specialFixedRoutes: map[string]httprouter.Handle{}},
 		defaultErrorCodes: getDefaultErrorCodes(),
 		injector:          injector,
 		mongoClients:      mongo.Clients{},
@@ -191,7 +191,7 @@ func (s *Server[_]) Run(addr ...string) error {
 
 	s.startTime = time.Now()
 
-	s.logger.Println("server is listening on:", s.httpServer.Addr)
+	s.LogPrintln("server is listening on:", s.httpServer.Addr)
 	return s.httpServer.ListenAndServe()
 }
 
@@ -216,6 +216,10 @@ func (s *Server[_]) Router() Router {
 }
 
 func (s *Server[I]) Handle(method, path string, handler any, bodyInstance ...any) {
+	s.handle(method, path, false, handler, bodyInstance...)
+}
+
+func (s *Server[I]) handle(method, path string, specialFixedPath bool, handler any, bodyInstance ...any) {
 	if len(bodyInstance) == 0 {
 		bodyInstance = []any{[]byte{}}
 	}
@@ -223,16 +227,20 @@ func (s *Server[I]) Handle(method, path string, handler any, bodyInstance ...any
 	bodyType := reflect.TypeOf(bodyInstance[0])
 	if h, ok := handler.(func(I) Result); ok {
 		s.middleware.handler = h
-		s.middleware.register(method, path, bodyType)
+		s.middleware.register(method, path, bodyType, specialFixedPath)
 		return
 	} else if mid, ok := handler.(*Middleware[I]); ok {
 		m := s.middleware.serverMiddlewareClone()
 		m.mergeMiddleware(mid)
-		m.register(method, path, bodyType)
+		m.register(method, path, bodyType, specialFixedPath)
 		return
 	}
 
 	panic("invalid type of handler: " + reflect.TypeOf(handler).String())
+}
+
+func (s *Server[I]) HandleSpecialFixedPath(method, path string, handler any, bodyInstance ...any) {
+	s.handle(method, path, true, handler, bodyInstance...)
 }
 
 func (s *Server[_]) POST(path string, handler any, bodyInstance ...any) {
