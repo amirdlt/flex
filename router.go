@@ -3,6 +3,7 @@ package flex
 import (
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"net/http"
 	"strings"
 )
 
@@ -34,4 +35,13 @@ func (r Router) Lookup(method, path string) (httprouter.Handle, httprouter.Param
 	}
 
 	return r.Router.Lookup(method, path)
+}
+
+func (r Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if handler, params, exist := r.Lookup(req.Method, req.URL.Path); exist {
+		handler(w, req, params)
+		return
+	}
+
+	r.Router.ServeHTTP(w, req)
 }
