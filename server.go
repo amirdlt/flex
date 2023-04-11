@@ -12,6 +12,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,6 +30,7 @@ type Server[I Injector] struct {
 	middleware        *Middleware[I]
 	httpServer        *http.Server
 	startTime         time.Time
+	loggerLevels      loggerLevel
 }
 
 type BasicServer = Server[*BasicInjector]
@@ -47,7 +49,11 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config = M{}
 	}
 
-	logger := logger{log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile), os.Stderr}
+	logger := logger{
+		log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile),
+		os.Stderr,
+	}
+
 	if loggerOut, exist := config["logger_out"]; exist {
 		if f, err := GetFileOutputStream(loggerOut.(string)); err != nil {
 			panic(err)
@@ -67,6 +73,10 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		mongoClients:      mongo.Clients{},
 		groups:            map[string]*Server[I]{},
 		jsonHandler:       DefaultJsonHandler{},
+		loggerLevels: loggerLevel{
+			levels:  defaultLoggerLevels,
+			RWMutex: &sync.RWMutex{},
+		},
 	}
 
 	s.middleware = newMiddleware(s)
@@ -292,78 +302,148 @@ func (s *Server[I]) FileServer(path, root string) {
 	}, NoBody{})
 }
 
+func (s *Server[I]) IsEnabledLogLevel(level string) bool {
+	return s.loggerLevels.isEnabledLogLevel(level)
+}
+
+func (s *Server[I]) EnableLogLevel(level string) {
+	s.loggerLevels.enableLogLevel(level)
+}
+
+func (s *Server[I]) DisableLogLevel(level string) {
+	s.loggerLevels.disableLogLevel(level)
+}
+
 func (s *Server[I]) LogPrintln(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogPrintLevel) {
+		return s
+	}
+
 	s.logger.println(append([]any{"path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogPrint(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogPrintLevel) {
+		return s
+	}
+
 	s.logger.print(append([]any{"path={" + s.rootPath + "} "}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogPrintf(format string, v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogPrintLevel) {
+		return s
+	}
+
 	s.logger.printf("path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
 func (s *Server[I]) LogTrace(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogTraceLevel) {
+		return s
+	}
+
 	s.logger.println(append([]any{"[TRACE] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogDebug(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogDebugLevel) {
+		return s
+	}
+
 	s.logger.println(append([]any{"[DEBUG] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogInfo(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogInfoLevel) {
+		return s
+	}
+
 	s.logger.println(append([]any{"[INFO] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogWarn(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogWarnLevel) {
+		return s
+	}
+
 	s.logger.println(append([]any{"[WARN] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogError(v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogErrorLevel) {
+		return s
+	}
+
 	s.logger.println(append([]any{"[ERROR] path={" + s.rootPath + "}"}, v...)...)
 	return s
 }
 
 func (s *Server[I]) LogFatal(v ...any) {
-	s.logger.println(append([]any{"[FATAL] path={" + s.rootPath + "}"}, v...)...)
+	if s.IsEnabledLogLevel(LogFatalLevel) {
+		s.logger.println(append([]any{"[FATAL] path={" + s.rootPath + "}"}, v...)...)
+	}
+
 	os.Exit(1)
 }
 
 func (s *Server[I]) LogTracef(format string, v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogTraceLevel) {
+		return s
+	}
+
 	s.logger.printf("[TRACE] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
 func (s *Server[I]) LogDebugf(format string, v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogDebugLevel) {
+		return s
+	}
+
 	s.logger.printf("[DEBUG] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
 func (s *Server[I]) LogInfof(format string, v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogInfoLevel) {
+		return s
+	}
+
 	s.logger.printf("[INFO] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
 func (s *Server[I]) LogWarnf(format string, v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogWarnLevel) {
+		return s
+	}
+
 	s.logger.printf("[WARN] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
 func (s *Server[I]) LogErrorf(format string, v ...any) *Server[I] {
+	if !s.IsEnabledLogLevel(LogErrorLevel) {
+		return s
+	}
+
 	s.logger.printf("[ERROR] path={"+s.rootPath+"} "+format, v...)
 	return s
 }
 
 func (s *Server[I]) LogFatalf(format string, v ...any) {
-	s.logger.printf("[FATAL] path={"+s.rootPath+"} "+format, v...)
+	if s.IsEnabledLogLevel(LogFatalLevel) {
+		s.logger.printf("[FATAL] path={"+s.rootPath+"} "+format, v...)
+	}
+
 	os.Exit(1)
 }
 

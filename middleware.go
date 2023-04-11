@@ -119,7 +119,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type, spe
 		i.w.WriteHeader(result.statusCode)
 		if result.responseBody != nil {
 			if _, err := fmt.Fprintf(i.w, "%s", result.responseBody); err != nil {
-				server.logger.Println("err while writing response, err" + err.Error())
+				server.logger.Println("err while writing response, err=" + err.Error())
 			}
 		}
 	}
