@@ -86,6 +86,7 @@ type Injector interface {
 	Cookies() []*http.Cookie
 	WrapStatusNotAcceptable(_error string, extValues ...any) Result
 	LookupQueryParam(key string) bool
+	SetContext(ctx context.Context)
 }
 
 type BasicInjector struct {
@@ -97,6 +98,7 @@ type BasicInjector struct {
 	defaultErrorCodes Map[int, string]
 	rawPath           string
 	logger            logger
+	ctx               context.Context
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
@@ -108,6 +110,10 @@ func (s *BasicInjector) RequestBody() any {
 }
 
 func (s *BasicInjector) Context() context.Context {
+	if s.ctx != nil {
+		return s.ctx
+	}
+
 	return s.r.Context()
 }
 
@@ -457,4 +463,8 @@ func (s *BasicInjector) Cookies() []*http.Cookie {
 
 func (s *BasicInjector) LookupQueryParam(key string) bool {
 	return s.Query(key) != ""
+}
+
+func (s *BasicInjector) SetContext(ctx context.Context) {
+	s.ctx = ctx
 }
