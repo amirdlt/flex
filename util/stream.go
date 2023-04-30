@@ -178,17 +178,19 @@ func (s Stream[V]) Skip(n int) Stream[V] {
 }
 
 func (s Stream[V]) Distinct() Stream[V] {
-	m := map[reflect.Value]any{}
+	var distinct []V
+	checkDuplicationMap := map[uint64]any{}
 	for _, v := range s {
-		m[reflect.ValueOf(v)] = nil
+		hash, _ := Hash(v)
+		if _, duplicated := checkDuplicationMap[hash]; duplicated {
+			continue
+		}
+
+		distinct = append(distinct, v)
+		checkDuplicationMap[hash] = nil
 	}
 
-	res := make(Stream[V], 0, len(s))
-	for k := range m {
-		res = append(res, k.Interface().(V))
-	}
-
-	return res
+	return distinct
 }
 
 func (s Stream[V]) AllMatch(predicate func(i int, v V) bool) bool {

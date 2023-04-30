@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"fmt"
+	"github.com/mitchellh/hashstructure/v2"
 	"io"
 	"os"
 	"reflect"
@@ -43,6 +44,10 @@ func Sha256(value string) string {
 
 func Md5(value string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(value)))
+}
+
+func Hash(v any) (uint64, error) {
+	return hashstructure.Hash(v, hashstructure.FormatV2, nil)
 }
 
 func GetFileOutputStream(path string) (io.ReadWriteCloser, error) {

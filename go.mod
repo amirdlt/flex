@@ -6,6 +6,7 @@ require (
 	github.com/amirdlt/ffvm v0.0.0-20221008103559-b644b023c68a
 	github.com/goccy/go-json v0.10.2
 	github.com/julienschmidt/httprouter v1.3.0
+	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/mongo-driver v1.11.4
 )
