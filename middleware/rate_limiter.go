@@ -2,7 +2,6 @@ package middleware
 
 import (
 	. "github.com/amirdlt/flex"
-	"net"
 	"sync"
 	"time"
 )
@@ -99,7 +98,6 @@ func CustomLimiter[I Injector](limitKeyGenerator LimitKeyGenerator[I], maxCount 
 
 func DosLimiter[I Injector](maxCount int, interval time.Duration, rateExceededHandler Handler[I]) Wrapper[I] {
 	return CustomLimiter(func(i I) string {
-		ip, _, _ := net.SplitHostPort(i.RemoteAddr())
-		return ip
+		return i.RealIp()
 	}, maxCount, interval, rateExceededHandler)
 }
