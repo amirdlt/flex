@@ -1,6 +1,9 @@
 package flex
 
-import "reflect"
+import (
+	"net/http"
+	"reflect"
+)
 
 type Result struct {
 	responseBody any
@@ -31,4 +34,16 @@ func (r Result) IsSuccessful() bool {
 
 func (r Result) IsTerminated() bool {
 	return r.terminate
+}
+
+func (r Result) Body() any {
+	return r.responseBody
+}
+
+func (r Result) StatusCode() int {
+	if r.statusCode == 0 {
+		return http.StatusOK
+	}
+
+	return r.statusCode
 }
