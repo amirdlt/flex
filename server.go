@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/amirdlt/flex/db/mongo"
 	. "github.com/amirdlt/flex/util"
-	"github.com/julienschmidt/httprouter"
 	"io"
 	"log"
 	"net/http"
@@ -67,7 +66,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		config:            config,
 		parent:            nil,
 		rootPath:          "",
-		router:            Router{Router: httprouter.New(), apis: map[string][]string{}, specialFixedRoutes: map[string]httprouter.Handle{}},
+		router:            NewRouter(),
 		defaultErrorCodes: getDefaultErrorCodes(),
 		injector:          injector,
 		mongoClients:      mongo.Clients{},
