@@ -17,20 +17,21 @@ import (
 )
 
 type Server[I Injector] struct {
-	defaultErrorCodes map[int]string
-	config            M
-	router            Router
-	logger            logger
-	rootPath          string
-	parent            *Server[I]
-	injector          func(*BasicInjector) I
-	mongoClients      mongo.Clients
-	groups            map[string]*Server[I]
-	jsonHandler       JsonHandler
-	middleware        *Middleware[I]
-	httpServer        *http.Server
-	startTime         time.Time
-	loggerLevels      loggerLevel
+	defaultErrorCodes   map[int]string
+	config              M
+	router              Router
+	logger              logger
+	rootPath            string
+	parent              *Server[I]
+	injector            func(*BasicInjector) I
+	injectorIdGenerator func(*BasicInjector) string
+	mongoClients        mongo.Clients
+	groups              map[string]*Server[I]
+	jsonHandler         JsonHandler
+	middleware          *Middleware[I]
+	httpServer          *http.Server
+	startTime           time.Time
+	loggerLevels        loggerLevel
 }
 
 type BasicServer = Server[*BasicInjector]
@@ -72,7 +73,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		injector:          injector,
 		mongoClients:      mongo.Clients{},
 		groups:            map[string]*Server[I]{},
-		jsonHandler:       DefaultJsonHandler{},
+		jsonHandler:       &DefaultJsonHandler{},
 		loggerLevels: loggerLevel{
 			levels:  defaultLoggerLevels,
 			RWMutex: &sync.RWMutex{},
@@ -101,6 +102,28 @@ func Default() *Server[*BasicInjector] {
 	return New(M{}, func(bi *BasicInjector) *BasicInjector {
 		return bi
 	})
+}
+
+func (s *Server[I]) CreateBasicInjector(path string, pathParams httprouter.Params, r *http.Request, w http.ResponseWriter) *BasicInjector {
+	baseI := &BasicInjector{
+		pathParameters:    pathParams,
+		r:                 r,
+		w:                 w,
+		requestBody:       nil,
+		extInjections:     M{},
+		defaultErrorCodes: s.defaultErrorCodes,
+		rawPath:           path,
+		logger:            s.logger,
+		ctx:               nil,
+		id:                "",
+		jsonHandler:       s.jsonHandler,
+	}
+
+	if s.injectorIdGenerator != nil {
+		baseI.id = s.injectorIdGenerator(baseI)
+	}
+
+	return baseI
 }
 
 func (s *Server[_]) StartTime() time.Time {
@@ -524,7 +547,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 </head>
 <body>
 <rapi-doc
-        spec-url="`+path+`/raw"
+        spec-url="` + path + `/raw"
 		show-header="false"
         id="thedoc"
         theme = "dark"
@@ -547,7 +570,7 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 ></rapi-doc>
 </body>
 </html>
-`), http.StatusOK)
+`))
 	}, noBody)
 
 	s.GET(path+"/raw", func(i I) Result {
@@ -559,6 +582,10 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 		i.SetContentType(contentType)
 		return i.ServeStaticFile(rawDocFilePath, http.StatusOK)
 	}, noBody)
+}
+
+func (s *Server[I]) SetInjectorIdGenerator(injectorIdGenerator func(*BasicInjector) string) {
+	s.injectorIdGenerator = injectorIdGenerator
 }
 
 func getDefaultErrorCodes() Map[int, string] {

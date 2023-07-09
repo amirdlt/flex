@@ -2,30 +2,12 @@ package flex
 
 import (
 	"net/http"
-	"reflect"
 )
 
 type Result struct {
 	responseBody any
 	statusCode   int
-	extValue     any
 	terminate    bool
-}
-
-func (r Result) GetExtValue() any {
-	if r.extValue == nil {
-		return nil
-	}
-
-	val := reflect.ValueOf(r.extValue)
-	switch val.Kind() {
-	case reflect.Array, reflect.Slice:
-		if val.Len() == 1 {
-			return val.Slice(0, 1)
-		}
-	}
-
-	return r.extValue
 }
 
 func (r Result) IsSuccessful() bool {

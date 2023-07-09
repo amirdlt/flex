@@ -18,75 +18,22 @@ type NoBody struct{}
 var noBody NoBody
 
 type Injector interface {
-	Wrap(response any, statusCode int, extValues ...any) Result
-	Context() context.Context
-	AddResponseHeader(key, value string)
-	SetResponseHeader(key, value string)
 	ResponseHeaders() http.Header
 	URL() *url.URL
-	RequestHeaders() http.Header
 	GetRequestHeader(key string) string
 	Host() string
 	Method() string
 	ContentLength() int64
-	WrapOk(response any, extValues ...any) Result
-	WrapNoContent(extValues ...any) Result
-	WrapJsonErr(_error, code string, statusCode int, extValues ...any) Result
-	WrapInvalidBody(_error string, extValues ...any) Result
-	WrapNotFoundErr(_error string, extValues ...any) Result
-	WrapForbiddenErr(_error string, extValues ...any) Result
-	WrapInternalErr(_error string, extValues ...any) Result
-	WrapBadRequestErr(_error string, extValues ...any) Result
-	WrapTooManyRequestsErr(_error string, extValues ...any) Result
-	Query(key string) string
-	DefaultQuery(key, defaultValue string) string
-	RequestBody() any
-	WrapTextPlain(response any, statusCode int, extValues ...any) Result
-	WrapWithContentType(response any, statusCode int, contentType string, extValues ...any) Result
-	PathParameter(key string) string
-	SetValue(key string, value any)
-	Value(key string) any
-	LookupValue(key string) (any, bool)
+	WrapOk(response any) Result
+	WrapNoContent() Result
+	WrapTooManyRequestsErr(err any) Result
 	SetContentType(contentType string)
-	DataMap() Map[string, any]
 	RemoteAddr() string
-	ParseForm() error
-	ParseMultipartForm(maxMemory int64) error
-	FormValue(key string) string
-	PostFormValue(key string) string
-	FormFile(name string) (*multipart.FileHeader, error)
-	RawPath() string
 	Path() string
-	LogPrintln(v ...any) *BasicInjector
-	LogPrint(v ...any) *BasicInjector
-	LogPrintf(format string, v ...any) *BasicInjector
-	LogDebug(v ...any) *BasicInjector
-	LogTrace(v ...any) *BasicInjector
-	LogInfo(v ...any) *BasicInjector
-	LogWarn(v ...any) *BasicInjector
-	LogError(v ...any) *BasicInjector
-	LogTracef(format string, v ...any) *BasicInjector
-	LogDebugf(format string, v ...any) *BasicInjector
-	LogInfof(format string, v ...any) *BasicInjector
-	LogWarnf(format string, v ...any) *BasicInjector
-	LogErrorf(format string, v ...any) *BasicInjector
 	request() *http.Request
 	response() http.ResponseWriter
 	ServeStaticFile(filePath string, statusCode int) Result
-	RequestHeader(key string) string
-	HasRequestHeader(key string) bool
-	LookupRequestHeader(key string) (string, bool)
-	EqualIfExistRequestHeader(key, expected string) bool
-	ContainsIfExistRequestHeader(key, value string) bool
 	RealIp() string
-	FormParams() (url.Values, error)
-	MultipartForm() (*multipart.Form, error)
-	Cookie(name string) (*http.Cookie, error)
-	SetCookie(cookie *http.Cookie)
-	Cookies() []*http.Cookie
-	WrapStatusNotAcceptable(_error string, extValues ...any) Result
-	LookupQueryParam(key string) bool
-	SetContext(ctx context.Context)
 }
 
 type BasicInjector struct {
@@ -99,6 +46,8 @@ type BasicInjector struct {
 	rawPath           string
 	logger            logger
 	ctx               context.Context
+	id                string
+	jsonHandler       JsonHandler
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
@@ -153,71 +102,68 @@ func (s *BasicInjector) ContentLength() int64 {
 	return s.r.ContentLength
 }
 
-func (s *BasicInjector) Wrap(response any, statusCode int, extValues ...any) Result {
+func (s *BasicInjector) Wrap(response any, statusCode int) Result {
 	return Result{
 		responseBody: response,
 		statusCode:   statusCode,
-		extValue:     extValues,
 	}
 }
 
-func (s *BasicInjector) WrapWithContentType(response any, statusCode int, contentType string, extValues ...any) Result {
+func (s *BasicInjector) WrapWithContentType(response any, statusCode int, contentType string) Result {
 	s.SetResponseHeader("Content-Type", contentType)
 	return Result{
 		responseBody: response,
 		statusCode:   statusCode,
-		extValue:     extValues,
 	}
 }
 
-func (s *BasicInjector) WrapOk(response any, extValues ...any) Result {
+func (s *BasicInjector) WrapOk(response any) Result {
 	return Result{
 		responseBody: response,
-		extValue:     extValues,
 	}
 }
 
-func (s *BasicInjector) WrapNoContent(extValues ...any) Result {
-	return s.Wrap(nil, http.StatusNoContent, extValues...)
+func (s *BasicInjector) WrapNoContent() Result {
+	return s.Wrap(nil, http.StatusNoContent)
 }
 
-func (s *BasicInjector) WrapJsonErr(_error, code string, statusCode int, extValues ...any) Result {
+func (s *BasicInjector) WrapJsonErr(err any, code string, statusCode int) Result {
 	return s.WrapWithContentType(M{
-		"error": _error,
+		"error": err,
 		"code":  code,
-	}, statusCode, "application/json", extValues...)
+	}, statusCode, "application/json")
 }
 
-func (s *BasicInjector) WrapInvalidBody(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusBadRequest], http.StatusBadRequest, extValues...)
+func (s *BasicInjector) WrapInvalidBody(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusBadRequest], http.StatusBadRequest)
 }
 
-func (s *BasicInjector) WrapNotFoundErr(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusNotFound], http.StatusNotFound, extValues...)
+func (s *BasicInjector) WrapNotFoundErr(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusNotFound], http.StatusNotFound)
 }
 
-func (s *BasicInjector) WrapForbiddenErr(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusForbidden], http.StatusForbidden, extValues...)
+func (s *BasicInjector) WrapForbiddenErr(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusForbidden], http.StatusForbidden)
 }
 
-func (s *BasicInjector) WrapInternalErr(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusInternalServerError], http.StatusInternalServerError, extValues...)
+func (s *BasicInjector) WrapInternalErr(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusInternalServerError], http.StatusInternalServerError)
 }
 
-func (s *BasicInjector) WrapBadRequestErr(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusBadRequest], http.StatusBadRequest, extValues...)
+func (s *BasicInjector) WrapBadRequestErr(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusBadRequest], http.StatusBadRequest)
 }
 
-func (s *BasicInjector) WrapStatusNotAcceptable(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusNotAcceptable], http.StatusNotAcceptable, extValues...)
+func (s *BasicInjector) WrapStatusNotAcceptable(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusNotAcceptable], http.StatusNotAcceptable)
 }
 
-func (s *BasicInjector) WrapTooManyRequestsErr(_error string, extValues ...any) Result {
-	return s.WrapJsonErr(_error, s.defaultErrorCodes[http.StatusTooManyRequests], http.StatusTooManyRequests, extValues...)
+func (s *BasicInjector) WrapTooManyRequestsErr(err any) Result {
+	return s.WrapJsonErr(err, s.defaultErrorCodes[http.StatusTooManyRequests], http.StatusTooManyRequests)
 }
 
-func (s *BasicInjector) WrapTextPlain(response any, statusCode int, extValues ...any) Result {
-	return s.WrapWithContentType(fmt.Sprint(response), statusCode, "text/plain", extValues...)
+func (s *BasicInjector) WrapTextPlain(response any, statusCode int) Result {
+	return s.WrapWithContentType(fmt.Sprint(response), statusCode, "text/plain")
 }
 
 func (s *BasicInjector) SetContentType(contentType string) {
@@ -467,4 +413,9 @@ func (s *BasicInjector) LookupQueryParam(key string) bool {
 
 func (s *BasicInjector) SetContext(ctx context.Context) {
 	s.ctx = ctx
+}
+
+func (s *BasicInjector) DefaultServeFile(filename string, statusCode int) Result {
+	http.ServeFile(s.response(), s.request(), filename)
+	return s.Wrap(nil, statusCode)
 }

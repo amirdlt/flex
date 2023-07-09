@@ -94,137 +94,101 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type, spe
 		}
 	})
 
-	send := func(i BasicInjector, result Result) {
-		if result.statusCode == 0 {
-			result.statusCode = http.StatusOK
-		}
+	if specialFixedPath[0] {
+		server.router.HandleSpecialFixedPath(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+			httpRouterHandler(server, params, path, r, w, bodyType, handler)
+		})
+	} else {
+		server.router.Handle(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+			httpRouterHandler(server, params, path, r, w, bodyType, handler)
+		})
+	}
+}
 
-		if result.responseBody != nil {
-			switch result.responseBody.(type) {
-			case []byte, string, error: // ready already
-			default:
-				if marshalled, err := server.jsonHandler.Marshal(result.responseBody); err != nil {
-					result = i.WrapInternalErr("error in json marshalling, err=" + err.Error())
-					i.SetContentType("application/json")
-				} else {
-					result.responseBody = marshalled
-				}
+func readRequestBody[I Injector](baseI *BasicInjector, server *Server[I], bodyType reflect.Type) bool {
+	defer func() {
+		_ = baseI.r.Body.Close()
+	}()
+
+	requestBodyPtr := reflect.New(bodyType)
+	val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+	switch val.Kind() {
+	case reflect.Array, reflect.Slice:
+		if val.Type().Elem().Kind() == reflect.Uint8 {
+			if arr, err := io.ReadAll(baseI.r.Body); err != nil {
+				sendResponse(baseI, baseI.WrapBadRequestErr("could not read body"))
+				return true
+			} else {
+				baseI.requestBody = arr
 			}
 		}
-
-		if _, exist := i.ResponseHeaders()["Content-Type"]; !exist {
-			i.SetContentType("application/json")
+	case reflect.String:
+		if arr, err := io.ReadAll(baseI.r.Body); err != nil {
+			sendResponse(baseI, baseI.WrapBadRequestErr("could not read body"))
+			return true
+		} else {
+			baseI.requestBody = string(arr)
 		}
-
-		i.w.WriteHeader(result.statusCode)
-		if result.responseBody != nil {
-			if _, err := fmt.Fprintf(i.w, "%s", result.responseBody); err != nil {
-				server.logger.Println("err while writing response, err=" + err.Error())
+	default:
+		if reflect.TypeOf(noBody) != bodyType {
+			if err := server.jsonHandler.NewDecoder(baseI.r.Body).Decode(requestBodyPtr.Interface()); err != nil {
+				sendResponse(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
+				return true
+			} else {
+				baseI.requestBody = requestBodyPtr.Elem().Interface()
 			}
 		}
 	}
 
-	if specialFixedPath[0] {
-		server.router.HandleSpecialFixedPath(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-			baseI := BasicInjector{
-				defaultErrorCodes: server.defaultErrorCodes,
-				pathParameters:    params,
-				r:                 r,
-				w:                 w,
-				extInjections:     M{},
-				rawPath:           path,
-				logger:            server.logger,
-			}
+	return false
+}
 
-			defer func() {
-				_ = r.Body.Close()
-			}()
+func sendResponse(i *BasicInjector, result Result) {
+	if result.statusCode == 0 {
+		result.statusCode = http.StatusOK
+	}
 
-			requestBodyPtr := reflect.New(bodyType)
-			val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
-			switch val.Kind() {
-			case reflect.Array, reflect.Slice:
-				if val.Type().Elem().Kind() == reflect.Uint8 {
-					if arr, err := io.ReadAll(r.Body); err != nil {
-						send(baseI, baseI.WrapBadRequestErr("could not read body"))
-						return
-					} else {
-						baseI.requestBody = arr
-					}
-				}
-			case reflect.String:
-				if arr, err := io.ReadAll(r.Body); err != nil {
-					send(baseI, baseI.WrapBadRequestErr("could not read body"))
-					return
-				} else {
-					baseI.requestBody = string(arr)
-				}
-			default:
-				if reflect.TypeOf(noBody) != bodyType {
-					if err := server.jsonHandler.NewDecoder(r.Body).Decode(requestBodyPtr.Interface()); err != nil {
-						send(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
-						return
-					} else {
-						baseI.requestBody = requestBodyPtr.Elem().Interface()
-					}
-				}
+	if result.responseBody != nil {
+		switch result.responseBody.(type) {
+		case []byte, string, error: // ready already
+		default:
+			if marshalled, err := i.jsonHandler.Marshal(result.responseBody); err != nil {
+				result = i.WrapInternalErr("error in json marshalling, err=" + err.Error())
+				i.SetContentType("application/json")
+			} else {
+				result.responseBody = marshalled
 			}
+		}
+	}
 
-			result := handler(server.injector(&baseI))
-			if !result.terminate {
-				send(baseI, result)
-			}
-		})
-	} else {
-		server.router.Handle(method, server.rootPath+path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-			baseI := BasicInjector{
-				defaultErrorCodes: server.defaultErrorCodes,
-				pathParameters:    params,
-				r:                 r,
-				w:                 w,
-				extInjections:     M{},
-				rawPath:           path,
-				logger:            server.logger,
-			}
+	if _, exist := i.ResponseHeaders()["Content-Type"]; !exist {
+		i.SetContentType("application/json")
+	}
 
-			defer func() {
-				_ = r.Body.Close()
-			}()
+	i.w.WriteHeader(result.statusCode)
+	if result.responseBody != nil {
+		if _, err := fmt.Fprintf(i.w, "%s", result.responseBody); err != nil {
+			i.LogPrintln("err while writing response, err=", err.Error())
+		}
+	}
+}
 
-			requestBodyPtr := reflect.New(bodyType)
-			val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
-			switch val.Kind() {
-			case reflect.Array, reflect.Slice:
-				if val.Type().Elem().Kind() == reflect.Uint8 {
-					if arr, err := io.ReadAll(r.Body); err != nil {
-						send(baseI, baseI.WrapBadRequestErr("could not read body"))
-						return
-					} else {
-						baseI.requestBody = arr
-					}
-				}
-			case reflect.String:
-				if arr, err := io.ReadAll(r.Body); err != nil {
-					send(baseI, baseI.WrapBadRequestErr("could not read body"))
-					return
-				} else {
-					baseI.requestBody = string(arr)
-				}
-			default:
-				if reflect.TypeOf(noBody) != bodyType {
-					if err := server.jsonHandler.NewDecoder(r.Body).Decode(requestBodyPtr.Interface()); err != nil {
-						send(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
-						return
-					} else {
-						baseI.requestBody = requestBodyPtr.Elem().Interface()
-					}
-				}
-			}
+func httpRouterHandler[I Injector](
+	server *Server[I],
+	params httprouter.Params,
+	path string,
+	r *http.Request,
+	w http.ResponseWriter,
+	bodyType reflect.Type,
+	handler Handler[I]) {
+	baseI := server.CreateBasicInjector(path, params, r, w)
 
-			result := handler(server.injector(&baseI))
-			if !result.terminate {
-				send(baseI, result)
-			}
-		})
+	if readRequestBody(baseI, server, bodyType) {
+		return
+	}
+
+	result := handler(server.injector(baseI))
+	if !result.terminate {
+		sendResponse(baseI, result)
 	}
 }
