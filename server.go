@@ -260,7 +260,7 @@ func (s *Server[I]) handle(method, path string, specialFixedPath bool, handler a
 	bodyType := reflect.TypeOf(bodyInstance[0])
 
 	if httpHandler, ok := handler.(http.Handler); ok {
-		handler = func(i I) Result { httpHandler.ServeHTTP(i.response(), i.request()); return Result{} }
+		handler = func(i I) Result { httpHandler.ServeHTTP(i.response(), i.request()); return Result{terminate: true} }
 	}
 
 	if h, ok := handler.(func(I) Result); ok {
