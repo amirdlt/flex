@@ -224,7 +224,7 @@ func (s *BasicInjector) PostFormValue(key string) string {
 }
 
 func (s *BasicInjector) Path() string {
-	return s.r.RequestURI
+	return strings.TrimSuffix(s.r.URL.Path, "/")
 }
 
 func (s *BasicInjector) RawPath() string {
