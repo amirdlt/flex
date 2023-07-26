@@ -3,14 +3,17 @@ package util
 import (
 	"crypto/md5"
 	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
+	"github.com/k0kubun/pp"
 	"github.com/mitchellh/hashstructure/v2"
 	"io"
 	"os"
 	"reflect"
 )
 
-// IsEmpty gets whether the specified object is considered empty or not.
+type HashOptions = hashstructure.HashOptions
+
 func IsEmpty(object any) bool {
 
 	// get nil case out of the way
@@ -42,19 +45,64 @@ func Sha256(value string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))
 }
 
+func Sha512(value string) string {
+	return fmt.Sprintf("%x", sha512.Sum512([]byte(value)))
+}
+
 func Md5(value string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(value)))
 }
 
-func Hash(v any) (uint64, error) {
-	return hashstructure.Hash(v, hashstructure.FormatV2, nil)
+func Sha256OfHash(value any, options ...HashOptions) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprint(Hash(value, options...)))))
 }
 
-func GetFileOutputStream(path string) (io.ReadWriteCloser, error) {
+func Sha512OfHash(value any, options ...HashOptions) string {
+	return fmt.Sprintf("%x", sha512.Sum512([]byte(fmt.Sprint(Hash(value, options...)))))
+}
+
+func Md5OfHash(value any, options ...HashOptions) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprint(Hash(value, options...)))))
+}
+
+func Hash(v any, options ...HashOptions) (uint64, error) {
+	var opts *HashOptions
+	if len(options) > 0 {
+		opts = &options[0]
+	}
+
+	return hashstructure.Hash(v, hashstructure.FormatV2, opts)
+}
+
+func GetFileStream(path string) (io.ReadWriteCloser, error) {
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_RDONLY|os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		panic(err)
 	}
 
 	return f, nil
+}
+
+func Print(v ...any) {
+	_, _ = pp.Print(v...)
+}
+
+func Printf(format string, v ...any) {
+	_, _ = pp.Printf(format, v...)
+}
+
+func Sprint(v ...any) string {
+	return pp.Sprint(v...)
+}
+
+func Sprintln(v ...any) string {
+	return pp.Sprintln(v...)
+}
+
+func Println(v ...any) {
+	_, _ = pp.Println(v...)
+}
+
+func Sprintf(format string, v ...any) string {
+	return pp.Sprintf(format, v...)
 }

@@ -1,0 +1,19 @@
+# Go specific
+*.exe
+*.exe~
+*.test
+*.prof
+*.out
+
+# Build
+*.o
+*.a
+*.so
+*.test
+
+# Dependency directories
+vendor/
+
+# GoLand IDE specific
+.idea/
+*.iml
