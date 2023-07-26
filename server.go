@@ -16,6 +16,18 @@ import (
 	"time"
 )
 
+var DefaultErrorCodes = map[int]string{
+	http.StatusBadRequest:          "ERR_BAD_REQUEST",
+	http.StatusInternalServerError: "ERR_INTERNAL_SERVER",
+	http.StatusTooManyRequests:     "ERR_TOO_MANY_REQUESTS",
+	http.StatusNotFound:            "ERR_NOT_FOUND",
+	http.StatusFound:               "ERR_ALREADY_EXIST",
+	http.StatusConflict:            "ERR_CONFLICT",
+	http.StatusForbidden:           "ERR_FORBIDDEN",
+	http.StatusNotImplemented:      "ERR_NOT_IMPLEMENTED",
+	http.StatusNotAcceptable:       "ERR_NOT_NOT_ACCEPTABLE",
+}
+
 type Server[I Injector] struct {
 	defaultErrorCodes   map[int]string
 	config              M
@@ -56,7 +68,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 	}
 
 	if loggerOut, exist := config["logger_out"]; exist {
-		if f, err := GetFileOutputStream(loggerOut.(string)); err != nil {
+		if f, err := GetFileStream(loggerOut.(string)); err != nil {
 			panic(err)
 		} else {
 			logger.SetOutput(f)
@@ -69,7 +81,7 @@ func New[I Injector](config M, injector func(baseInjector *BasicInjector) I) *Se
 		parent:            nil,
 		rootPath:          "",
 		router:            Router{Router: httprouter.New(), apis: map[string][]string{}, specialFixedRoutes: map[string]httprouter.Handle{}},
-		defaultErrorCodes: getDefaultErrorCodes(),
+		defaultErrorCodes: DefaultErrorCodes,
 		injector:          injector,
 		mongoClients:      mongo.Clients{},
 		groups:            map[string]*Server[I]{},
@@ -591,18 +603,4 @@ func (s *Server[I]) ServeDefaultOpenAPI(path, rawDocFilePath string) {
 
 func (s *Server[I]) SetInjectorIdGenerator(injectorIdGenerator func(*BasicInjector) string) {
 	s.injectorIdGenerator = injectorIdGenerator
-}
-
-func getDefaultErrorCodes() Map[int, string] {
-	return map[int]string{
-		http.StatusBadRequest:          "ERR_BAD_REQUEST",
-		http.StatusInternalServerError: "ERR_INTERNAL_SERVER",
-		http.StatusTooManyRequests:     "ERR_TOO_MANY_REQUESTS",
-		http.StatusNotFound:            "ERR_NOT_FOUND",
-		http.StatusFound:               "ERR_ALREADY_EXIST",
-		http.StatusConflict:            "ERR_CONFLICT",
-		http.StatusForbidden:           "ERR_FORBIDDEN",
-		http.StatusNotImplemented:      "ERR_NOT_IMPLEMENTED",
-		http.StatusNotAcceptable:       "ERR_NOT_NOT_ACCEPTABLE",
-	}
 }

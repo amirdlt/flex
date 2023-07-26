@@ -17,13 +17,15 @@ type MapInterface[K comparable, V any] interface {
 	ContainKey(key K) bool
 	ContainValue(value V) bool
 	Put(key K, value V)
-	PutAll(_m Map[K, V])
+	PutAll(mm map[K]V)
 	Remove(key K)
 	RemoveAll(keys ...K)
-	PutItem(item Item[K, V])
-	Copy() Map[K, V]
+	PutItems(items ...Item[K, V])
+	Copy() MapInterface[K, V]
 	RemoveEmptyValues()
 	ForEach(iterator func(k K, v V))
+	ItemSample(size int, allowRepeating bool) Stream[Item[K, V]]
+	Sample(size int, allowRepeating bool) MapInterface[K, V]
 }
 
 type Map[K comparable, V any] map[K]V
@@ -103,8 +105,8 @@ func (m Map[K, V]) Put(key K, value V) {
 	m[key] = value
 }
 
-func (m Map[K, V]) PutAll(_m Map[K, V]) {
-	for k, v := range _m {
+func (m Map[K, V]) PutAll(mm map[K]V) {
+	for k, v := range mm {
 		m[k] = v
 	}
 }
@@ -119,11 +121,13 @@ func (m Map[K, V]) RemoveAll(keys ...K) {
 	}
 }
 
-func (m Map[K, V]) PutItem(item Item[K, V]) {
-	m[item.k] = item.v
+func (m Map[K, V]) PutItems(items ...Item[K, V]) {
+	for _, item := range items {
+		m[item.k] = item.v
+	}
 }
 
-func (m Map[K, V]) Copy() Map[K, V] {
+func (m Map[K, V]) Copy() MapInterface[K, V] {
 	res := Map[K, V]{}
 	for k, v := range m {
 		res[k] = v
@@ -146,7 +150,31 @@ func (m Map[K, V]) ForEach(iterator func(k K, v V)) {
 	}
 }
 
-func MapOf[K, V comparable](items ...Item[K, V]) Map[K, V] {
+func (m Map[K, V]) ItemSample(size int, allowRepeating bool) Stream[Item[K, V]] {
+	if size == 0 {
+		return []Item[K, V]{}
+	}
+
+	if size < 0 || size > m.Len() {
+		size = m.Len()
+	}
+
+	return m.Items().Sample(size, allowRepeating)
+}
+
+func (m Map[K, V]) Sample(size int, allowRepeating bool) MapInterface[K, V] {
+	if size == 0 {
+		return Map[K, V]{}
+	}
+
+	if size < 0 || size > m.Len() {
+		size = m.Len()
+	}
+
+	return MapOf([]Item[K, V](m.ItemSample(size, allowRepeating))...)
+}
+
+func MapOf[K comparable, V any](items ...Item[K, V]) Map[K, V] {
 	m := Map[K, V]{}
 	for _, item := range items {
 		m[item.k] = item.v
@@ -169,62 +197,62 @@ func CopyMap[K comparable, V any](m map[K]V) map[K]V {
 }
 
 type SynchronizedMap[K comparable, V any] struct {
-	m Map[K, V]
+	m MapInterface[K, V]
 	*sync.RWMutex
 }
 
-func NewSynchronizedMap[K comparable, V any](_ K, _ V) SynchronizedMap[K, V] {
+func NewSynchronizedMap[K comparable, V any](m map[K]V) SynchronizedMap[K, V] {
 	return SynchronizedMap[K, V]{
-		m:       Map[K, V]{},
+		m:       Map[K, V](m),
 		RWMutex: &sync.RWMutex{},
 	}
 }
 
 func (m SynchronizedMap[K, V]) Len() int {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.Len()
 }
 
 func (m SynchronizedMap[K, V]) Keys() Stream[K] {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.Keys()
 }
 
 func (m SynchronizedMap[K, V]) Values() Stream[V] {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.Values()
 }
 
 func (m SynchronizedMap[K, V]) Items() Stream[Item[K, V]] {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.Items()
 }
 
 func (m SynchronizedMap[K, V]) IsEmpty() bool {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.IsEmpty()
 }
 
 func (m SynchronizedMap[K, V]) ContainKey(key K) bool {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.ContainKey(key)
 }
 
 func (m SynchronizedMap[K, V]) ContainValue(value V) bool {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	return m.m.ContainValue(value)
 }
@@ -236,11 +264,11 @@ func (m SynchronizedMap[K, V]) Put(key K, value V) {
 	m.m.Put(key, value)
 }
 
-func (m SynchronizedMap[K, V]) PutAll(_m map[K]V) {
+func (m SynchronizedMap[K, V]) PutAll(mm map[K]V) {
 	m.Lock()
 	defer m.Unlock()
 
-	m.m.PutAll(_m)
+	m.m.PutAll(mm)
 }
 
 func (m SynchronizedMap[K, V]) Remove(key K) {
@@ -257,18 +285,21 @@ func (m SynchronizedMap[K, V]) RemoveAll(keys ...K) {
 	m.m.RemoveAll(keys...)
 }
 
-func (m SynchronizedMap[K, V]) PutItem(item Item[K, V]) {
+func (m SynchronizedMap[K, V]) PutItems(items ...Item[K, V]) {
 	m.Lock()
 	defer m.Unlock()
 
-	m.m.PutItem(item)
+	m.m.PutItems(items...)
 }
 
-func (m SynchronizedMap[K, V]) Copy() Map[K, V] {
-	m.Lock()
-	defer m.Unlock()
+func (m SynchronizedMap[K, V]) Copy() MapInterface[K, V] {
+	m.RLock()
+	defer m.RUnlock()
 
-	return m.m.Copy()
+	return SynchronizedMap[K, V]{
+		m:       m.m.Copy(),
+		RWMutex: &sync.RWMutex{},
+	}
 }
 
 func (m SynchronizedMap[K, V]) RemoveEmptyValues() {
@@ -279,19 +310,26 @@ func (m SynchronizedMap[K, V]) RemoveEmptyValues() {
 }
 
 func (m SynchronizedMap[K, V]) ForEach(iterator func(k K, v V)) {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	m.m.ForEach(iterator)
 }
 
-func (m SynchronizedMap[K, V]) AsMap() Map[K, V] {
-	m.Lock()
-	defer m.Unlock()
+func (m SynchronizedMap[K, V]) ItemSample(size int, allowRepeating bool) Stream[Item[K, V]] {
+	m.RLock()
+	defer m.RUnlock()
 
-	return m.m.Copy()
+	return m.m.ItemSample(size, allowRepeating)
 }
 
-func (m SynchronizedMap[K, V]) UnsafeInnerMap() Map[K, V] {
+func (m SynchronizedMap[K, V]) Sample(size int, allowRepeating bool) MapInterface[K, V] {
+	m.RLock()
+	defer m.RUnlock()
+
+	return m.m.Sample(size, allowRepeating)
+}
+
+func (m SynchronizedMap[K, V]) UnsafeInnerMap() MapInterface[K, V] {
 	return m.m
 }

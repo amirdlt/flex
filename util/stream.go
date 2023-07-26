@@ -1,6 +1,7 @@
 package util
 
 import (
+	"math/rand"
 	"reflect"
 	"sort"
 )
@@ -229,11 +230,42 @@ func (s Stream[V]) IsEmpty() bool {
 
 func (s Stream[V]) Copy() Stream[V] {
 	res := make(Stream[V], len(s))
-	for i, v := range s {
-		res[i] = v
-	}
+	copy(res, s)
 
 	return res
+}
+
+func (s Stream[V]) Sample(size int, allowRepeating bool) Stream[V] {
+	if size == 0 {
+		return []V{}
+	}
+
+	if size < 0 || size > len(s) {
+		size = len(s)
+	}
+
+	result := make(Stream[V], size)
+	if allowRepeating {
+		for i := 0; i < size; i++ {
+			result[i] = s[rand.Intn(len(s))]
+		}
+
+		return result
+	}
+
+	chosenIndices := Map[int, any]{}
+	for i := 0; i < size; i++ {
+		randomIndex := rand.Intn(len(s))
+		if chosenIndices.ContainKey(randomIndex) {
+			i--
+			continue
+		}
+
+		result[i] = s[randomIndex]
+		chosenIndices[randomIndex] = nil
+	}
+
+	return result
 }
 
 func MapStream[F any, T any](source Stream[F], mapper func(i int, f F) T) Stream[T] {
@@ -251,9 +283,7 @@ func StreamOf[V any](source ...V) Stream[V] {
 
 func CopySlice[V any](src []V) []V {
 	clone := make([]V, len(src))
-	for i, v := range src {
-		clone[i] = v
-	}
+	copy(clone, src)
 
 	return clone
 }
