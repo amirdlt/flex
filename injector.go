@@ -60,36 +60,46 @@ func (s *BasicInjector) PathParameter(key string) string {
 }
 
 func (s *BasicInjector) RequestBody() any {
-	if !s.bodyProcessed {
-		requestBodyPtr := reflect.New(s.bodyType)
-		val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+	s.readBody()
+	return s.requestBody
+}
+
+func (s *BasicInjector) readBody() {
+	if s.bodyProcessed {
+		return
+	}
+
+	defer func() {
+		_ = s.r.Body.Close()
+		s.bodyProcessed = true
+	}()
+
+	requestBodyPtr := reflect.New(s.bodyType)
+	val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+	kind := val.Kind()
+	if (kind == reflect.Array || kind == reflect.Slice) &&
+		val.Type().Elem().Kind() == reflect.Uint8 || kind == reflect.String {
 		arr, err := io.ReadAll(s.r.Body)
 		if err != nil {
 			panic(s.WrapBadRequestErr("could not read body, err=" + err.Error()))
 		}
 
-		switch val.Kind() {
-		case reflect.Array, reflect.Slice:
-			if val.Type().Elem().Kind() == reflect.Uint8 {
-				s.requestBody = arr
-			}
-		case reflect.String:
+		if kind == reflect.String {
 			s.requestBody = string(arr)
-		default:
-			if reflect.TypeOf(noBody) != s.bodyType {
-				if err = s.jsonHandler.Unmarshal(arr, requestBodyPtr.Interface()); err != nil {
-					panic(s.WrapBadRequestErr("could not read body as a valid json, err=" + err.Error()))
-				}
-
-				s.requestBody = requestBodyPtr.Elem().Interface()
-			}
+		} else {
+			s.requestBody = arr
 		}
 
-		_ = s.r.Body.Close()
-		s.bodyProcessed = true
+		return
 	}
 
-	return s.requestBody
+	if reflect.TypeOf(noBody) != s.bodyType {
+		if err := s.jsonHandler.NewDecoder(s.r.Body).Decode(requestBodyPtr.Interface()); err != nil {
+			panic(s.WrapBadRequestErr("could not read body as a valid json, err=" + err.Error()))
+		}
+
+		s.requestBody = requestBodyPtr.Elem().Interface()
+	}
 }
 
 func (s *BasicInjector) Context() context.Context {
