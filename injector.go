@@ -3,13 +3,16 @@ package flex
 import (
 	"context"
 	"fmt"
+	"github.com/amirdlt/ffvm"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"io"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -41,6 +44,7 @@ type BasicInjector struct {
 	r                 *http.Request
 	w                 http.ResponseWriter
 	requestBody       any
+	bodyProcessed     bool
 	extInjections     Map[string, any]
 	defaultErrorCodes Map[int, string]
 	rawPath           string
@@ -48,6 +52,7 @@ type BasicInjector struct {
 	ctx               context.Context
 	id                string
 	jsonHandler       JsonHandler
+	bodyType          reflect.Type
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
@@ -55,6 +60,35 @@ func (s *BasicInjector) PathParameter(key string) string {
 }
 
 func (s *BasicInjector) RequestBody() any {
+	if !s.bodyProcessed {
+		requestBodyPtr := reflect.New(s.bodyType)
+		val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+		arr, err := io.ReadAll(s.r.Body)
+		if err != nil {
+			panic(s.WrapBadRequestErr("could not read body, err=" + err.Error()))
+		}
+
+		switch val.Kind() {
+		case reflect.Array, reflect.Slice:
+			if val.Type().Elem().Kind() == reflect.Uint8 {
+				s.requestBody = arr
+			}
+		case reflect.String:
+			s.requestBody = string(arr)
+		default:
+			if reflect.TypeOf(noBody) != s.bodyType {
+				if err = s.jsonHandler.Unmarshal(arr, requestBodyPtr.Interface()); err != nil {
+					panic(s.WrapBadRequestErr("could not read body as a valid json, err=" + err.Error()))
+				} else {
+					s.requestBody = requestBodyPtr.Elem().Interface()
+				}
+			}
+		}
+
+		_ = s.r.Body.Close()
+		s.bodyProcessed = true
+	}
+
 	return s.requestBody
 }
 
@@ -418,4 +452,8 @@ func (s *BasicInjector) SetContext(ctx context.Context) {
 func (s *BasicInjector) DefaultServeFile(filename string, statusCode int) Result {
 	http.ServeFile(s.response(), s.request(), filename)
 	return s.Wrap(nil, statusCode)
+}
+
+func (s *BasicInjector) RequestBodyFFVM() []ffvm.ValidatorIssue {
+	return ffvm.Validate(s.requestBody)
 }
