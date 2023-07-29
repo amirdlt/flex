@@ -11,6 +11,11 @@ func PanicHandler[I Injector](panicHandler PanicHandlerFunc[I]) Wrapper[I] {
 		return func(i I) (r Result) {
 			defer func() {
 				if catch := recover(); catch != nil {
+					if result, ok := catch.(Result); ok {
+						r = result
+						return
+					}
+
 					r = panicHandler(i, catch)
 				}
 			}()
