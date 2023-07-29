@@ -79,9 +79,9 @@ func (s *BasicInjector) RequestBody() any {
 			if reflect.TypeOf(noBody) != s.bodyType {
 				if err = s.jsonHandler.Unmarshal(arr, requestBodyPtr.Interface()); err != nil {
 					panic(s.WrapBadRequestErr("could not read body as a valid json, err=" + err.Error()))
-				} else {
-					s.requestBody = requestBodyPtr.Elem().Interface()
 				}
+
+				s.requestBody = requestBodyPtr.Elem().Interface()
 			}
 		}
 
