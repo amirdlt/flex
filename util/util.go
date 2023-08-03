@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
+	"github.com/goccy/go-json"
 	"github.com/k0kubun/pp"
 	"github.com/mitchellh/hashstructure/v2"
 	"io"
@@ -81,6 +82,31 @@ func GetFileStream(path string) (io.ReadWriteCloser, error) {
 	}
 
 	return f, nil
+}
+
+func Jsonify(v any) string {
+	switch v.(type) {
+	case string:
+		return v.(string)
+	case []byte:
+		return string(v.([]byte))
+	default:
+		v, err := json.MarshalIndent(v.(string), "", "  ")
+		if err != nil {
+			panic(err.Error())
+		}
+		return string(v)
+	}
+}
+
+func PrintJsonify(v any, outputs ...io.Writer) {
+	if len(outputs) == 0 {
+		outputs = []io.Writer{os.Stdout}
+	}
+
+	for _, output := range outputs {
+		_, _ = fmt.Fprintln(output, Jsonify(v))
+	}
 }
 
 func Print(v ...any) {
