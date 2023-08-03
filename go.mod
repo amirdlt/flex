@@ -3,7 +3,7 @@ module github.com/amirdlt/flex
 go 1.19
 
 require (
-	github.com/amirdlt/ffvm v0.0.0-20221008103559-b644b023c68a
+	github.com/amirdlt/ffvm v0.0.0-20230729034012-d82432245c0f
 	github.com/goccy/go-json v0.10.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/k0kubun/pp v3.0.1+incompatible

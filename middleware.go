@@ -4,7 +4,6 @@ import (
 	"fmt"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
-	"io"
 	"net/http"
 	"reflect"
 )
@@ -105,45 +104,11 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type, spe
 	}
 }
 
-func readRequestBody[I Injector](baseI *BasicInjector, server *Server[I], bodyType reflect.Type) bool {
-	defer func() {
-		_ = baseI.r.Body.Close()
-	}()
-
-	requestBodyPtr := reflect.New(bodyType)
-	val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
-	switch val.Kind() {
-	case reflect.Array, reflect.Slice:
-		if val.Type().Elem().Kind() == reflect.Uint8 {
-			if arr, err := io.ReadAll(baseI.r.Body); err != nil {
-				sendResponse(baseI, baseI.WrapBadRequestErr("could not read body"))
-				return true
-			} else {
-				baseI.requestBody = arr
-			}
-		}
-	case reflect.String:
-		if arr, err := io.ReadAll(baseI.r.Body); err != nil {
-			sendResponse(baseI, baseI.WrapBadRequestErr("could not read body"))
-			return true
-		} else {
-			baseI.requestBody = string(arr)
-		}
-	default:
-		if reflect.TypeOf(noBody) != bodyType {
-			if err := server.jsonHandler.NewDecoder(baseI.r.Body).Decode(requestBodyPtr.Interface()); err != nil {
-				sendResponse(baseI, baseI.WrapBadRequestErr("could not read body as desired schema, err="+err.Error()))
-				return true
-			} else {
-				baseI.requestBody = requestBodyPtr.Elem().Interface()
-			}
-		}
+func sendResponse(i *BasicInjector, result Result) {
+	if result.terminate {
+		return
 	}
 
-	return false
-}
-
-func sendResponse(i *BasicInjector, result Result) {
 	if result.statusCode == 0 {
 		result.statusCode = http.StatusOK
 	}
@@ -171,6 +136,8 @@ func sendResponse(i *BasicInjector, result Result) {
 			i.LogPrintln("err while writing response, err=", err.Error())
 		}
 	}
+
+	result.terminate = true
 }
 
 func httpRouterHandler[I Injector](
@@ -182,13 +149,17 @@ func httpRouterHandler[I Injector](
 	bodyType reflect.Type,
 	handler Handler[I]) {
 	baseI := server.CreateBasicInjector(path, params, r, w)
-
-	if readRequestBody(baseI, server, bodyType) {
-		return
-	}
+	baseI.bodyType = bodyType
+	defer func() {
+		if catch := recover(); catch != nil {
+			if result, ok := catch.(Result); ok {
+				sendResponse(baseI, result)
+			} else {
+				panic(catch)
+			}
+		}
+	}()
 
 	result := handler(server.injector(baseI))
-	if !result.terminate {
-		sendResponse(baseI, result)
-	}
+	sendResponse(baseI, result)
 }

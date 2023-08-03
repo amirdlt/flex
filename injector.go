@@ -3,13 +3,16 @@ package flex
 import (
 	"context"
 	"fmt"
+	"github.com/amirdlt/ffvm"
 	. "github.com/amirdlt/flex/util"
 	"github.com/julienschmidt/httprouter"
+	"io"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 )
 
@@ -41,6 +44,7 @@ type BasicInjector struct {
 	r                 *http.Request
 	w                 http.ResponseWriter
 	requestBody       any
+	bodyProcessed     bool
 	extInjections     Map[string, any]
 	defaultErrorCodes Map[int, string]
 	rawPath           string
@@ -48,6 +52,7 @@ type BasicInjector struct {
 	ctx               context.Context
 	id                string
 	jsonHandler       JsonHandler
+	bodyType          reflect.Type
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
@@ -55,7 +60,46 @@ func (s *BasicInjector) PathParameter(key string) string {
 }
 
 func (s *BasicInjector) RequestBody() any {
+	s.readBody()
 	return s.requestBody
+}
+
+func (s *BasicInjector) readBody() {
+	if s.bodyProcessed {
+		return
+	}
+
+	defer func() {
+		_ = s.r.Body.Close()
+		s.bodyProcessed = true
+	}()
+
+	requestBodyPtr := reflect.New(s.bodyType)
+	val := reflect.ValueOf(requestBodyPtr.Elem().Interface())
+	kind := val.Kind()
+	if (kind == reflect.Array || kind == reflect.Slice) &&
+		val.Type().Elem().Kind() == reflect.Uint8 || kind == reflect.String {
+		arr, err := io.ReadAll(s.r.Body)
+		if err != nil {
+			panic(s.WrapBadRequestErr("could not read body, err=" + err.Error()))
+		}
+
+		if kind == reflect.String {
+			s.requestBody = string(arr)
+		} else {
+			s.requestBody = arr
+		}
+
+		return
+	}
+
+	if reflect.TypeOf(noBody) != s.bodyType {
+		if err := s.jsonHandler.NewDecoder(s.r.Body).Decode(requestBodyPtr.Interface()); err != nil {
+			panic(s.WrapBadRequestErr("could not read body as a valid json, err=" + err.Error()))
+		}
+
+		s.requestBody = requestBodyPtr.Elem().Interface()
+	}
 }
 
 func (s *BasicInjector) Context() context.Context {
@@ -418,4 +462,8 @@ func (s *BasicInjector) SetContext(ctx context.Context) {
 func (s *BasicInjector) DefaultServeFile(filename string, statusCode int) Result {
 	http.ServeFile(s.response(), s.request(), filename)
 	return s.Wrap(nil, statusCode)
+}
+
+func (s *BasicInjector) RequestBodyFFVM() []ffvm.ValidatorIssue {
+	return ffvm.Validate(s.requestBody)
 }
