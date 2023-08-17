@@ -306,6 +306,29 @@ func (s Stream[V]) Update(updater func(v V) V) Stream[V] {
 	return s
 }
 
+func (s Stream[V]) Group(labelGenerator func(v V) string) map[string]Stream[V] {
+	result := map[string]Stream[V]{}
+	for _, v := range s {
+		label := labelGenerator(v)
+		result[label] = append(result[label], v)
+	}
+
+	return result
+}
+
+func (s Stream[V]) Reduce(reducer func(v1, v2 V) V) V {
+	if len(s) == 0 {
+		panic("empty stream does not support reduce method")
+	}
+
+	reduced := s[0]
+	for i := 1; i < len(s); i++ {
+		reduced = reducer(reduced, s[i])
+	}
+
+	return reduced
+}
+
 func MapStream[F any, T any](source Stream[F], mapper func(i int, f F) T) Stream[T] {
 	res := make(Stream[T], len(source))
 	for i, v := range source {
