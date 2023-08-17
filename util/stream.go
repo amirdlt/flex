@@ -132,6 +132,15 @@ func (s Stream[V]) MapToUint(mapper func(i int, v V) uint) Stream[uint] {
 	return MapStream(s, mapper)
 }
 
+func (s Stream[V]) MapToJson(mapper func(v V) M) Stream[M] {
+	res := make([]M, len(s))
+	for i, v := range s {
+		res[i] = mapper(v)
+	}
+
+	return res
+}
+
 func (s Stream[V]) Contains(v V) bool {
 	for _, sv := range s {
 		if reflect.DeepEqual(v, sv) {
