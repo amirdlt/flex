@@ -268,6 +268,35 @@ func (s Stream[V]) Sample(size int, allowRepeating bool) Stream[V] {
 	return result
 }
 
+func (s Stream[V]) Find(filter func(v V) bool) Stream[V] {
+	var res []V
+	for _, v := range s {
+		if filter(v) {
+			res = append(res, v)
+		}
+	}
+
+	return res
+}
+
+func (s Stream[V]) FindOne(filter func(v V) bool) V {
+	for _, v := range s {
+		if filter(v) {
+			return v
+		}
+	}
+
+	panic("element does not exist")
+}
+
+func (s Stream[V]) Update(updater func(v V) V) Stream[V] {
+	for i, v := range s {
+		s[i] = updater(v)
+	}
+
+	return s
+}
+
 func MapStream[F any, T any](source Stream[F], mapper func(i int, f F) T) Stream[T] {
 	res := make(Stream[T], len(source))
 	for i, v := range source {

@@ -91,7 +91,7 @@ func Jsonify(v any) string {
 	case []byte:
 		return string(v.([]byte))
 	default:
-		v, err := json.MarshalIndent(v.(string), "", "  ")
+		v, err := json.MarshalIndent(v, "", "  ")
 		if err != nil {
 			panic(err.Error())
 		}
