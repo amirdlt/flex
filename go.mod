@@ -9,7 +9,7 @@ require (
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/pkg/errors v0.9.1
-	go.mongodb.org/mongo-driver v1.12.1
+	go.mongodb.org/mongo-driver v1.13.0
 )
 
 require (
