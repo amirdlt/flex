@@ -82,11 +82,11 @@ func (s Stream[V]) RemoveAll(v Stream[V]) Stream[V] {
 	return res
 }
 
-func (s Stream[V]) RemoveIf(predicate func(i int, v V) bool) Stream[V] {
+func (s Stream[V]) RemoveIf(predicate func(v V) bool) Stream[V] {
 	res := make(Stream[V], 0, len(s))
 
-	for i, v := range s {
-		if !predicate(i, v) {
+	for _, v := range s {
+		if !predicate(v) {
 			res = append(res, v)
 		}
 	}
@@ -94,17 +94,17 @@ func (s Stream[V]) RemoveIf(predicate func(i int, v V) bool) Stream[V] {
 	return res
 }
 
-func (s Stream[V]) Filter(filter func(i int, v V) bool) Stream[V] {
+func (s Stream[V]) Filter(filter func(v V) bool) Stream[V] {
 	return s.RemoveIf(filter)
 }
 
 func (s Stream[V]) RemoveEmptyValues() Stream[V] {
-	return s.RemoveIf(func(_ int, v V) bool {
+	return s.RemoveIf(func(v V) bool {
 		return IsEmpty(v)
 	})
 }
 
-func (s Stream[V]) MapToInt(mapper func(i int, v V) int) Stream[int] {
+func (s Stream[V]) MapToInt(mapper func(v V) int) Stream[int] {
 	return MapStream(s, mapper)
 }
 
@@ -122,19 +122,19 @@ func (s Stream[V]) Sum(sum func(v1, v2 V) V) V {
 	return res
 }
 
-func (s Stream[V]) MapToFloat(mapper func(i int, v V) float64) Stream[float64] {
+func (s Stream[V]) MapToFloat(mapper func(v V) float64) Stream[float64] {
 	return MapStream(s, mapper)
 }
 
-func (s Stream[V]) MapToString(mapper func(i int, v V) string) Stream[string] {
+func (s Stream[V]) MapToString(mapper func(v V) string) Stream[string] {
 	return MapStream(s, mapper)
 }
 
-func (s Stream[V]) MapToByte(mapper func(i int, v V) byte) Stream[byte] {
+func (s Stream[V]) MapToByte(mapper func(v V) byte) Stream[byte] {
 	return MapStream(s, mapper)
 }
 
-func (s Stream[V]) MapToUint(mapper func(i int, v V) uint) Stream[uint] {
+func (s Stream[V]) MapToUint(mapper func(v V) uint) Stream[uint] {
 	return MapStream(s, mapper)
 }
 
@@ -335,10 +335,10 @@ func (s Stream[V]) Reduce(reducer func(v1, v2 V) V) V {
 	return reduced
 }
 
-func MapStream[F any, T any](source Stream[F], mapper func(i int, f F) T) Stream[T] {
+func MapStream[F any, T any](source Stream[F], mapper func(f F) T) Stream[T] {
 	res := make(Stream[T], len(source))
 	for i, v := range source {
-		res[i] = mapper(i, v)
+		res[i] = mapper(v)
 	}
 
 	return res
