@@ -2,7 +2,9 @@ package util
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
+	"regexp"
 	"sync"
 )
 
@@ -172,6 +174,78 @@ func (m Map[K, V]) Sample(size int, allowRepeating bool) MapInterface[K, V] {
 	}
 
 	return MapOf([]Item[K, V](m.ItemSample(size, allowRepeating))...)
+}
+
+func (m Map[K, V]) ValuesByPathForNestedStandardMap(addr string) Stream[any] {
+	var path []string
+	for _, match := range regexp.MustCompile(`"([^"]*)"|([^".]+)`).FindAllStringSubmatch(addr, -1) {
+		if match[1] == "" {
+			path = append(path, match[2])
+		} else {
+			path = append(path, match[1])
+		}
+	}
+
+	if len(path) == 0 {
+		path = append(path, addr)
+	}
+
+	if len(path) == 1 {
+		if val := any(m[any(path[0]).(K)]); val != nil {
+			return []any{val}
+		} else {
+			return []any{}
+		}
+	}
+
+	var appender func(v any, level *[]any)
+	appender = func(v any, level *[]any) {
+		switch reflect.ValueOf(v).Kind() {
+		case reflect.Array, reflect.Slice:
+			if _, ok := v.([]any); !ok {
+				v = []any(v.(primitive.A)) // wtf??? tired of strict static type
+			}
+
+			for _, vv := range v.([]any) {
+				appender(vv, level)
+			}
+		default:
+			if v != nil {
+				*level = append(*level, v)
+			}
+		}
+	}
+
+	var level []any
+	for _, addr = range path[:len(path)-1] {
+		var nextLevel []any
+		if level == nil {
+			appender(m[any(addr).(K)], &level)
+		} else {
+			for _, node := range level {
+				nodeAsMap, ok := node.(M)
+				if !ok {
+					continue
+				}
+
+				appender(nodeAsMap[addr], &nextLevel)
+			}
+
+			level = nextLevel
+		}
+	}
+
+	var leafs []any
+	for _, node := range level {
+		nodeAsMap, ok := node.(M)
+		if !ok {
+			continue
+		}
+
+		appender(nodeAsMap[path[len(path)-1]], &leafs)
+	}
+
+	return leafs
 }
 
 func MapOf[K comparable, V any](items ...Item[K, V]) Map[K, V] {
