@@ -12,7 +12,13 @@ func (s Stream[V]) Len() int {
 	return len(s)
 }
 
-func (s Stream[V]) ForEach(consumer func(i int, v V)) {
+func (s Stream[V]) ForEach(consumer func(v V)) {
+	for _, v := range s {
+		consumer(v)
+	}
+}
+
+func (s Stream[V]) ForEachWithIndexedConsumer(consumer func(i int, v V)) {
 	for index, v := range s {
 		consumer(index, v)
 	}
