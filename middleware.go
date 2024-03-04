@@ -87,7 +87,7 @@ func (m *Middleware[I]) register(method, path string, bodyType reflect.Type, spe
 
 	m.wrappers.Items().Sort(func(i, j Item[int, []Wrapper[I]]) bool {
 		return i.Key() < j.Key()
-	}).ForEach(func(_ int, item Item[int, []Wrapper[I]]) {
+	}).ForEach(func(item Item[int, []Wrapper[I]]) {
 		for _, w := range item.Value() {
 			handler = w(handler)
 		}

@@ -32,10 +32,10 @@ func (s Stream[V]) Append(v ...V) Stream[V] {
 	return append(s, v...)
 }
 
-func (s Stream[V]) AppendIf(predicate func(i int, v V) bool, v ...V) Stream[V] {
+func (s Stream[V]) AppendIf(predicate func(v V) bool, v ...V) Stream[V] {
 	res := s
-	for i, v := range v {
-		if predicate(i, v) {
+	for _, v := range v {
+		if predicate(v) {
 			res = append(s, v)
 		}
 	}
@@ -209,9 +209,9 @@ func (s Stream[V]) Distinct() Stream[V] {
 	return distinct
 }
 
-func (s Stream[V]) AllMatch(predicate func(i int, v V) bool) bool {
-	for i, v := range s {
-		if !predicate(i, v) {
+func (s Stream[V]) AllMatch(predicate func(v V) bool) bool {
+	for _, v := range s {
+		if !predicate(v) {
 			return false
 		}
 	}
@@ -219,9 +219,9 @@ func (s Stream[V]) AllMatch(predicate func(i int, v V) bool) bool {
 	return true
 }
 
-func (s Stream[V]) AnyMatch(predicate func(i int, v V) bool) bool {
-	for i, v := range s {
-		if predicate(i, v) {
+func (s Stream[V]) AnyMatch(predicate func(v V) bool) bool {
+	for _, v := range s {
+		if predicate(v) {
 			return true
 		}
 	}
@@ -229,9 +229,9 @@ func (s Stream[V]) AnyMatch(predicate func(i int, v V) bool) bool {
 	return false
 }
 
-func (s Stream[V]) NoneMatch(predicate func(i int, v V) bool) bool {
-	for i, v := range s {
-		if predicate(i, v) {
+func (s Stream[V]) NoneMatch(predicate func(v V) bool) bool {
+	for _, v := range s {
+		if predicate(v) {
 			return false
 		}
 	}
