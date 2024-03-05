@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/goccy/go-json"
 	"reflect"
 	"regexp"
 	"sync"
@@ -176,7 +176,12 @@ func (m Map[K, V]) Sample(size int, allowRepeating bool) MapInterface[K, V] {
 	return MapOf([]Item[K, V](m.ItemSample(size, allowRepeating))...)
 }
 
-func (m Map[K, V]) ValuesByPathForNestedStandardMap(addr string) Stream[any] {
+func (m Map[K, V]) ValuesByPathForNestedStandardMap(addr string, convertStructsToMap ...bool) Stream[any] {
+	convertToMap := true
+	if len(convertStructsToMap) > 0 {
+		convertToMap = convertStructsToMap[0]
+	}
+
 	var path []string
 	for _, match := range regexp.MustCompile(`"([^"]*)"|([^".]+)`).FindAllStringSubmatch(addr, -1) {
 		if match[1] == "" {
@@ -200,19 +205,51 @@ func (m Map[K, V]) ValuesByPathForNestedStandardMap(addr string) Stream[any] {
 
 	var appender func(v any, level *[]any)
 	appender = func(v any, level *[]any) {
-		switch reflect.ValueOf(v).Kind() {
+		val := reflect.ValueOf(v)
+		switch val.Kind() {
 		case reflect.Array, reflect.Slice:
-			if _, ok := v.([]any); !ok {
-				v = []any(v.(primitive.A)) // wtf??? tired of strict static type
+			for i := 0; i < val.Len(); i++ {
+				appender(val.Index(i).Interface(), level)
 			}
-
-			for _, vv := range v.([]any) {
-				appender(vv, level)
-			}
+		case reflect.Pointer, reflect.UnsafePointer:
+			appender(val.Elem().Interface(), level)
 		default:
 			if v != nil {
 				*level = append(*level, v)
 			}
+		}
+	}
+
+	var mapFiller func(reflect.Value, M)
+	mapFiller = func(val reflect.Value, m M) {
+		switch val.Kind() {
+		case reflect.Map:
+			for _, key := range val.MapKeys() {
+				m[fmt.Sprint(key.Interface())] = val.MapIndex(key).Interface()
+			}
+		case reflect.Struct:
+			if convertToMap {
+				asBytes, _ := json.Marshal(val.Interface())
+
+				var asMap M
+				_ = json.Unmarshal(asBytes, &asMap)
+
+				for k, v := range asMap {
+					m[k] = v
+				}
+			} else {
+				for i := 0; i < val.NumField(); i++ {
+					m[fmt.Sprint(val.Type().Field(i).Name)] = val.Field(i).Interface()
+				}
+			}
+		case reflect.Pointer:
+			mapFiller(val.Elem(), m)
+		case reflect.Array, reflect.Slice:
+			for i := 0; i < val.Len(); i++ {
+				mapFiller(val.Index(i), m)
+			}
+		default:
+			return // do nothing... primitive types cannot be here
 		}
 	}
 
@@ -223,8 +260,10 @@ func (m Map[K, V]) ValuesByPathForNestedStandardMap(addr string) Stream[any] {
 			appender(m[any(addr).(K)], &level)
 		} else {
 			for _, node := range level {
-				nodeAsMap, ok := node.(M)
-				if !ok {
+				nodeAsMap := M{}
+				mapFiller(reflect.ValueOf(node), nodeAsMap)
+
+				if len(nodeAsMap) == 0 {
 					continue
 				}
 
@@ -237,8 +276,10 @@ func (m Map[K, V]) ValuesByPathForNestedStandardMap(addr string) Stream[any] {
 
 	var leafs []any
 	for _, node := range level {
-		nodeAsMap, ok := node.(M)
-		if !ok {
+		nodeAsMap := M{}
+		mapFiller(reflect.ValueOf(node), nodeAsMap)
+
+		if len(nodeAsMap) == 0 {
 			continue
 		}
 
