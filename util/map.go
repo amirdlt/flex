@@ -28,6 +28,8 @@ type MapInterface[K comparable, V any] interface {
 	ForEach(iterator func(k K, v V))
 	ItemSample(size int, allowRepeating bool) Stream[Item[K, V]]
 	Sample(size int, allowRepeating bool) MapInterface[K, V]
+	Get(key K) V
+	GetOrDefault(key K, value V) V
 }
 
 type Map[K comparable, V any] map[K]V
@@ -51,6 +53,18 @@ func (i Item[K, V]) String() string {
 
 func (m Map[K, V]) Len() int {
 	return len(m)
+}
+
+func (m Map[K, V]) Get(key K) V {
+	return m[key]
+}
+
+func (m Map[K, V]) GetOrDefault(key K, value V) V {
+	if !m.ContainKey(key) {
+		return value
+	}
+
+	return m.Get(key)
 }
 
 func (m Map[K, V]) Keys() Stream[K] {
@@ -443,6 +457,20 @@ func (m SynchronizedMap[K, V]) Sample(size int, allowRepeating bool) MapInterfac
 	defer m.RUnlock()
 
 	return m.m.Sample(size, allowRepeating)
+}
+
+func (m SynchronizedMap[K, V]) Get(key K) V {
+	m.RLock()
+	defer m.RUnlock()
+
+	return m.m.Get(key)
+}
+
+func (m SynchronizedMap[K, V]) GetOrDefault(key K, value V) V {
+	m.RLock()
+	defer m.RUnlock()
+
+	return m.m.GetOrDefault(key, value)
 }
 
 func (m SynchronizedMap[K, V]) UnsafeInnerMap() MapInterface[K, V] {
