@@ -358,7 +358,7 @@ func (s Stream[V]) Reduce(reducer func(v1, v2 V) V) V {
 	return reduced
 }
 
-func (s Stream[V]) AppendIfDoesNotExist(vs ...V) Stream[V] {
+func (s Stream[V]) AppendIfNotExist(vs ...V) Stream[V] {
 	result := s
 	for _, v := range vs {
 		if !result.Contains(v) {
