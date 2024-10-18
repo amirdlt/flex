@@ -369,6 +369,28 @@ func (s Stream[V]) AppendIfDoesNotExist(vs ...V) Stream[V] {
 	return result
 }
 
+func (s Stream[V]) AppendIfNotExistAndNotEmpty(vs ...V) Stream[V] {
+	result := s
+	for _, v := range vs {
+		if !IsEmpty(v) && !result.Contains(v) {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
+func (s Stream[V]) AppendIfNotEmpty(vs ...V) Stream[V] {
+	result := s
+	for _, v := range vs {
+		if !IsEmpty(v) {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
 func MapStream[F any, T any](source Stream[F], mapper func(f F) T) Stream[T] {
 	res := make(Stream[T], len(source))
 	for i, v := range source {
