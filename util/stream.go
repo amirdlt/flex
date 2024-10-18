@@ -1,6 +1,7 @@
 package util
 
 import (
+	"github.com/pkg/errors"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -294,19 +295,41 @@ func (s Stream[V]) Find(filter func(v V) bool) Stream[V] {
 	return res
 }
 
-func (s Stream[V]) FindOne(filter func(v V) bool) V {
+func (s Stream[V]) FindOne(filter func(v V) bool) (V, error) {
 	for _, v := range s {
 		if filter(v) {
-			return v
+			return v, nil
 		}
 	}
 
-	panic("element does not exist")
+	var v V
+	return v, errors.New("element does not exist")
 }
 
 func (s Stream[V]) Update(updater func(v V) V) Stream[V] {
 	for i, v := range s {
 		s[i] = updater(v)
+	}
+
+	return s
+}
+
+func (s Stream[V]) UpdateIf(predicate func(v V) bool, updater func(v V) V) Stream[V] {
+	for i, v := range s {
+		if predicate(v) {
+			s[i] = updater(v)
+		}
+	}
+
+	return s
+}
+
+func (s Stream[V]) UpdateOneIf(predicate func(v V) bool, updater func(v V) V) Stream[V] {
+	for i, v := range s {
+		if predicate(v) {
+			s[i] = updater(v)
+			return s
+		}
 	}
 
 	return s
@@ -333,6 +356,17 @@ func (s Stream[V]) Reduce(reducer func(v1, v2 V) V) V {
 	}
 
 	return reduced
+}
+
+func (s Stream[V]) AppendIfDoesNotExist(vs ...V) Stream[V] {
+	result := s
+	for _, v := range vs {
+		if !result.Contains(v) {
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
 
 func MapStream[F any, T any](source Stream[F], mapper func(f F) T) Stream[T] {
