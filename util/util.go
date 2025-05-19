@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"github.com/goccy/go-json"
+	"github.com/google/uuid"
 	"github.com/k0kubun/pp"
 	"github.com/mitchellh/hashstructure/v2"
 	"io"
@@ -14,6 +15,37 @@ import (
 )
 
 type HashOptions = hashstructure.HashOptions
+
+func GenerateUUID(prefix string, v any) string {
+	if v == nil {
+		if prefix == "" {
+			return uuid.New().String()
+		}
+
+		return fmt.Sprint(prefix, "--", uuid.New())
+	}
+
+	h, err := Hash(v, HashOptions{IgnoreZeroValue: true, SlicesAsSets: true})
+	if err != nil {
+		panic(err)
+	}
+
+	if prefix == "" {
+		return uuid.NewHash(
+			sha256.New(),
+			[16]byte{},
+			[]byte(fmt.Sprint(h)),
+			4,
+		).String()
+	}
+
+	return fmt.Sprint(prefix, "--", uuid.NewHash(
+		sha256.New(),
+		[16]byte{},
+		[]byte(fmt.Sprint(h)),
+		4,
+	))
+}
 
 func IsEmpty(object any) bool {
 
