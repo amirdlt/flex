@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
 	"math/rand"
 	"reflect"
@@ -127,8 +128,14 @@ func (s Stream[V]) MapToFloat(mapper func(v V) float64) Stream[float64] {
 	return MapStream(s, mapper)
 }
 
-func (s Stream[V]) MapToString(mapper func(v V) string) Stream[string] {
-	return MapStream(s, mapper)
+func (s Stream[V]) MapToString(mapper ...func(v V) string) Stream[string] {
+	if len(mapper) == 0 {
+		mapper = []func(v V) string{func(v V) string {
+			return fmt.Sprint(v)
+		}}
+	}
+
+	return MapStream(s, mapper[0])
 }
 
 func (s Stream[V]) MapToByte(mapper func(v V) byte) Stream[byte] {
@@ -389,6 +396,16 @@ func (s Stream[V]) AppendIfNotEmpty(vs ...V) Stream[V] {
 	}
 
 	return result
+}
+
+func (s Stream[V]) MapToAny(mapper ...func(v V) any) Stream[any] {
+	if len(mapper) == 0 {
+		mapper = []func(v V) any{func(v V) any {
+			return any(v)
+		}}
+	}
+
+	return MapStream(s, mapper[0])
 }
 
 func MapStream[F any, T any](source Stream[F], mapper func(f F) T) Stream[T] {
