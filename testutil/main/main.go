@@ -22,8 +22,8 @@ func main() {
 
 	g := NewGraph[M, M](func(m M) any {
 		return m["id"]
-	}, func(from string, to string, data M) any {
-		arr := []string{from, to}
+	}, func(from *Node[M, M], to *Node[M, M], data M) any {
+		arr := []EntityId{from.Id, to.Id}
 		sort.Strings(arr)
 		return fmt.Sprint(arr[0], arr[1])
 	})
@@ -38,16 +38,16 @@ func main() {
 	fmt.Println(g)
 	fmt.Println(time.Since(t))
 
-	count := Map[string, int]{}
-	g.ForEachNode(func(node *Node[M]) {
-		count[node.Id] += node.IngoingEdges.Len() + node.OutgoingEdges.Len()
-	})
+	//count := Map[string, int]{}
+	//g.ForEachNode(func(node *Node[M, M]) {
+	//
+	//})
 
-	fmt.Println(count.Values().Sort(func(v1, v2 int) bool {
-		return v1 > v2
-	})[:10])
+	//fmt.Println(count.Values().Sort(func(v1, v2 int) bool {
+	//	return v1 > v2
+	//})[:10])
 
-	for k, v := range g.BFSAll() {
-		fmt.Println(k, v)
-	}
+	//for k, v := range g.BFSAll() {
+	//	fmt.Println(k, v)
+	//}
 }
