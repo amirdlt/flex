@@ -149,6 +149,8 @@ func (g *Graph[N, E]) RemoveEdge(id EntityId) bool {
 	e.from.outgoing = e.from.outgoing.Remove(e)
 	e.to.ingoing = e.to.outgoing.Remove(e)
 
+	delete(g.Edges, id)
+
 	return true
 }
 
