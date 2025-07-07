@@ -408,6 +408,12 @@ func (s Stream[V]) MapToAny(mapper ...func(v V) any) Stream[any] {
 	return MapStream(s, mapper[0])
 }
 
+func (s Stream[V]) FilterByKind(kind reflect.Kind) Stream[V] {
+	return s.Filter(func(v V) bool {
+		return reflect.ValueOf(v).Kind() == kind
+	})
+}
+
 func MapStream[F any, T any](source Stream[F], mapper func(f F) T) Stream[T] {
 	res := make(Stream[T], len(source))
 	for i, v := range source {
