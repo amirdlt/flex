@@ -41,6 +41,8 @@ type Injector interface {
 	Path() string
 	ServeStaticFile(filePath string, statusCode int) Result
 	RealIp() string
+	request() *http.Request
+	response() http.ResponseWriter
 }
 
 type BasicInjector struct {
@@ -57,6 +59,14 @@ type BasicInjector struct {
 	id                string
 	jsonHandler       JsonHandler
 	bodyType          reflect.Type
+}
+
+func (s *BasicInjector) request() *http.Request {
+	return s.r
+}
+
+func (s *BasicInjector) response() http.ResponseWriter {
+	return s.w
 }
 
 func (s *BasicInjector) PathParameter(key string) string {
