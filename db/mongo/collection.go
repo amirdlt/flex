@@ -4,12 +4,11 @@ import (
 	"context"
 	. "github.com/amirdlt/flex/util"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"reflect"
-	"time"
 )
 
 type Collection struct {
@@ -20,7 +19,7 @@ type SearchConstraints struct {
 	Skip          int
 	Limit         int
 	OnlyCount     bool
-	Regex         primitive.Regex
+	Regex         bson.Regex
 	Contains      bool
 	CaseSensitive bool
 	Fields        bson.M
@@ -153,24 +152,26 @@ func (c *Collection) GetById(ctx context.Context, id, v any, idKey ...string) er
 	return c.FindOne(ctx, bson.M{_idKey: id}).Decode(v)
 }
 
-func (c *Collection) Find(ctx context.Context, filter any, opts ...*options.FindOptions) (*mongo.Cursor, error) {
-	_options := options.Find().SetAllowDiskUse(true).SetNoCursorTimeout(true)
-	switch len(opts) {
-	case 0:
-	default:
-		_options = opts[0].SetAllowDiskUse(true).SetNoCursorTimeout(true)
-	}
-
-	return c.Collection.Find(ctx, filter, _options)
+func (c *Collection) Find(ctx context.Context, filter any, opts ...options.Lister[options.FindOptions]) (*mongo.Cursor, error) {
+	//_options := options.Find().SetAllowDiskUse(true).SetNoCursorTimeout(true)
+	//switch len(opts) {
+	//case 0:
+	//default:
+	//	_options = opts[0].SetAllowDiskUse(true).SetNoCursorTimeout(true)
+	//}
+	//
+	//return c.Collection.Find(ctx, filter, _options)
+	return c.Collection.Find(ctx, filter, opts...)
 }
 
-func (c *Collection) Aggregate(ctx context.Context, filter any, opts ...*options.AggregateOptions) (*mongo.Cursor, error) {
-	_options := options.Aggregate().SetAllowDiskUse(true).SetMaxTime(time.Hour)
-	switch len(opts) {
-	case 0:
-	default:
-		_options = opts[0].SetAllowDiskUse(true).SetMaxTime(time.Hour)
-	}
+func (c *Collection) Aggregate(ctx context.Context, filter any, opts ...options.Lister[options.AggregateOptions]) (*mongo.Cursor, error) {
+	//_options := options.Aggregate().SetAllowDiskUse(true).SetMaxTime(time.Hour)
+	//switch len(opts) {
+	//case 0:
+	//default:
+	//	_options = opts[0].SetAllowDiskUse(true).SetMaxTime(time.Hour)
+	//}
 
-	return c.Collection.Aggregate(ctx, filter, _options)
+	//return c.Collection.Aggregate(ctx, filter, _options)
+	return c.Collection.Aggregate(ctx, filter, opts...)
 }

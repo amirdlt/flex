@@ -3,8 +3,8 @@ package mongo
 import (
 	"context"
 	. "github.com/amirdlt/flex/util"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"log"
 )
 
@@ -34,7 +34,7 @@ func (c Clients) AddClient(name, connectionUrl string) error {
 		panic("client already exists")
 	}
 
-	if client, err := mongo.Connect(context.TODO(), options.Client().
+	if client, err := mongo.Connect(options.Client().
 		ApplyURI(connectionUrl)); err != nil {
 		return err
 	} else {

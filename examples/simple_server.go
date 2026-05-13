@@ -6,8 +6,8 @@ import (
 	. "github.com/amirdlt/flex"
 	. "github.com/amirdlt/flex/util"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"time"
 )
