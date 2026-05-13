@@ -4,7 +4,6 @@ import (
 	"context"
 	. "github.com/amirdlt/flex/util"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -43,20 +42,20 @@ func (c *Collection) Search(ctx context.Context, sc SearchConstraints, v any) (i
 		} else if sc.CaseSensitive {
 			if sc.Contains {
 				condition = bson.M{
-					"$regex": primitive.Regex{Pattern: ".*" + value + ".*", Options: ""},
+					"$regex": bson.Regex{Pattern: ".*" + value + ".*", Options: ""},
 				}
 			} else {
 				condition = bson.M{"$eq": value}
 			}
 		} else if sc.Contains {
 			condition = bson.M{
-				"$regex": primitive.Regex{
+				"$regex": bson.Regex{
 					Pattern: ".*" + value + ".*", Options: "i",
 				},
 			}
 		} else {
 			condition = bson.M{
-				"$regex": primitive.Regex{Pattern: "^" + value + "$", Options: "i"},
+				"$regex": bson.Regex{Pattern: "^" + value + "$", Options: "i"},
 			}
 		}
 
